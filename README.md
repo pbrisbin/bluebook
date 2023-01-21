@@ -1,11 +1,11 @@
-# Blueprint
+# Bluebook
 
 Render / web-server for man-pages present on (I assume) Unix-like systems.
 
 ## Usage
 
 ```console
-blueprint
+bluebook
 ```
 
 Launches a web server where the local man-pages can be browsed.
