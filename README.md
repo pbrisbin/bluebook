@@ -1,6 +1,6 @@
 # Bluebook
 
-Render / web-server for man-pages present on (I assume) Unix-like systems.
+Renderer / web-server for man-pages present on (I assume) Unix-like systems.
 
 ## Usage
 
