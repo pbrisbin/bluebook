@@ -57,6 +57,7 @@ library:
   source-dirs: src
   dependencies:
     - blaze-html
+    - envparse
     - errors
     - extra
     - filepath
@@ -65,6 +66,7 @@ library:
     - relude
     - shakespeare
     - unliftio
+    - xdg-basedir
     - zlib
 
 executables:
