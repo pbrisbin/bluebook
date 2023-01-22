@@ -2,6 +2,7 @@ module Bluebook.Pandoc
     ( addHeaderLinks
     , reduceHeaderLevels
     , convertManPageRefs
+    , linkBareUrls
     , module X
     ) where
 
@@ -21,17 +22,25 @@ addHeaderLinks :: Block -> Block
 addHeaderLinks = linkIdentifiers . addIdentifiers
 
 linkIdentifiers :: Block -> Block
-linkIdentifiers = id -- TODO
+linkIdentifiers = \case
+    (Header n attr inner) | Just identifier <- getIdentifier attr ->
+        Header n attr [link inner $ "#" <> identifier]
+    x -> x
 
 addIdentifiers :: Block -> Block
 addIdentifiers = \case
-    (Header n attr is) | Just attr' <- addIdentifier is attr ->
-        Header n attr' is
+    (Header n attr inner) | Just attr' <- addIdentifier inner attr ->
+        Header n attr' inner
     x -> x
 
+getIdentifier :: Attr -> Maybe Text
+getIdentifier = \case
+    ("", _, _) -> Nothing
+    (x, _, _) -> Just x
+
 addIdentifier :: [Inline] -> Attr -> Maybe Attr
-addIdentifier is = \case
-    ("", classes, kvs) -> Just (toIdentifier is, classes, kvs)
+addIdentifier inner = \case
+    ("", classes, kvs) -> Just (toIdentifier inner, classes, kvs)
     _ -> Nothing
 
 toIdentifier :: [Inline] -> Text
@@ -45,103 +54,65 @@ toIdentifier =
 inlineText :: Inline -> [Text]
 inlineText = \case
     Str t -> [t]
-    Emph is -> concatMap inlineText is
-    Underline is -> concatMap inlineText is
-    Strong is -> concatMap inlineText is
-    Strikeout is -> concatMap inlineText is
-    Superscript is -> concatMap inlineText is
-    Subscript is -> concatMap inlineText is
-    SmallCaps is -> concatMap inlineText is
-    Quoted _ is -> concatMap inlineText is
-    Cite _ is -> concatMap inlineText is
     Code _ t -> [t]
-    Link _ is _ -> concatMap inlineText is
-    Image _ is _ -> concatMap inlineText is
-    Span _ is -> concatMap inlineText is
     _ -> []
 
 reduceHeaderLevels :: Block -> Block
 reduceHeaderLevels = \case
-    x@(Header 6 _ _) -> x
-    Header n attr is -> Header (n + 1) attr is
+    Header n attr inner -> Header (min 6 (n + 1)) attr inner
     x -> x
 
--- |
---
--- @
--- ..., Str "foo(1)", ...
--- ..., Emph/Strong (Str "foo(1)"), ...
--- ..., Emph/Strong "foo", Str "(1)", ...
--- ..., Emph/String "foo", Emph/Strong "(1)", ...
--- @
---
-convertManPageRefs :: Block -> Block
+convertManPageRefs :: [Inline] -> [Inline]
 convertManPageRefs = \case
-    Plain is -> Plain $ convertInlines is
-    Para is -> Para $ convertInlines is
-    LineBlock iss -> LineBlock $ map convertInlines iss
-    x@CodeBlock{} -> x
-    x@RawBlock{} -> x
-    BlockQuote bs -> BlockQuote $ map convertManPageRefs bs
-    OrderedList x bss -> OrderedList x $ map (map convertManPageRefs) bss
-    BulletList bss -> BulletList $ map (map convertManPageRefs) bss
-    DefinitionList ibs -> DefinitionList
-        $ map (bimap convertInlines (map (map convertManPageRefs))) ibs
-    Header x y is -> Header x y $ convertInlines is
-    x@HorizontalRule{} -> x
-    x@Table{} -> x
-    Div x bs -> Div x $ map convertManPageRefs bs
-    x@Null{} -> x
-
-convertInlines :: [Inline] -> [Inline]
-convertInlines = \case
-    -- emph "foo", "(1)", ...
     (Emph [Str x] : Str y : rest)
-        | (Right ref, mP) <- refAndPuncuation $ x <> y
-        -> [linkManPage ref]
-            <> maybe [] (\p -> [Str p]) mP
-            <> convertInlines rest
+        | Right inner <- parse (Emph . pure) $ x <> y -> inner
+        <> convertManPageRefs rest
 
-    -- strong "foo", "(1)", ...
     (Strong [Str x] : Str y : rest)
-        | (Right ref, mP) <- refAndPuncuation $ x <> y
-        -> [linkManPage ref]
-            <> maybe [] (\p -> [Str p]) mP
-            <> convertInlines rest
+        | Right inner <- parse (Strong . pure) $ x <> y -> inner
+        <> convertManPageRefs rest
 
-    -- "foo", emph "(1)", ...
     (Str x : Emph [Str y] : rest)
-        | (Right ref, mP) <- refAndPuncuation $ x <> y
-        -> [linkManPage ref]
-            <> maybe [] (\p -> [Str p]) mP
-            <> convertInlines rest
+        | Right inner <- parse (Emph . pure) $ x <> y -> inner
+        <> convertManPageRefs rest
 
-    -- "foo", strong "(1)", ...
     (Str x : Strong [Str y] : rest)
-        | (Right ref, mP) <- refAndPuncuation $ x <> y
-        -> [linkManPage ref]
-            <> maybe [] (\p -> [Str p]) mP
-            <> convertInlines rest
+        | Right inner <- parse (Strong . pure) $ x <> y -> inner
+        <> convertManPageRefs rest
 
-    -- "foo(1)", ..., ...
-    (Str x : rest) | (Right ref, mP) <- refAndPuncuation x ->
-        [linkManPage ref] <> maybe [] (\p -> [Str p]) mP <> convertInlines rest
+    (Str x : rest) | Right inner <- parse id x ->
+        inner <> convertManPageRefs rest
 
-    -- Skip
-    (a : rest) -> [a] <> convertInlines rest
+    (a : rest) -> a : convertManPageRefs rest
 
-    -- Done
     [] -> []
-  where
-    refAndPuncuation t
-        | "." `T.isSuffixOf` t = (manPageFromRef $ T.dropEnd 1 t, Just ".")
-        | "," `T.isSuffixOf` t = (manPageFromRef $ T.dropEnd 1 t, Just ",")
-        | ":" `T.isSuffixOf` t = (manPageFromRef $ T.dropEnd 1 t, Just ":")
-        | ";" `T.isSuffixOf` t = (manPageFromRef $ T.dropEnd 1 t, Just ";")
-        | otherwise = (manPageFromRef t, Nothing)
+    where parse f = withPunctuation $ fmap (f . linkManPage) . manPageFromRef
 
 linkManPage :: ManPage -> Inline
-linkManPage page = Link
-    nullAttr
-    [Strong [Str $ manPageToRef page]]
-    (manPageUrlPath page, manPageToRef page)
+linkManPage page = link [Str $ manPageToRef page] $ manPageUrlPath page
+
+linkBareUrls :: [Inline] -> [Inline]
+linkBareUrls = concatMap $ \case
+    Str x -> concatMap renderIfLink $ T.words x
+    x -> [x]
+  where
+    renderIfLink x = fromMaybe [Str x] $ hush $ withPunctuation tryLink x
+    tryLink t = link [Str t] t
+        <$ guard ("http://" `T.isInfixOf` t || "https://" `T.isInfixOf` t)
+
+withPunctuation
+    :: (Text -> Either String Inline)
+    -- ^ Function to apply to de-punctuated text
+    -> Text
+    -- ^ Text that may have puncuation
+    -> Either String [Inline]
+    -- ^ Result with trailing punctuation re-added if necessary
+withPunctuation f x = do
+    (t, c) <- note "No last character" $ T.unsnoc x
+    if c `elem` puncuation then (: [Str $ pack [c]]) <$> f t else pure <$> f x
+  where
+    puncuation :: String
+    puncuation = ".,:;"
+
+link :: [Inline] -> Text -> Inline
+link inner url = Link nullAttr inner (url, "")

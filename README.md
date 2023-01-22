@@ -18,8 +18,35 @@ Launches a web server where the local man-pages can be browsed.
 - `MANPATH`: used to define where to search for man-pages, default is
 
   ```
-  $HOME/.local/share/man:/usr/local/share/man:/usr/share/man
+  ${XDG_DATA_DIR:-$HOME/.local/share}/man:/usr/local/share/man:/usr/share/man
   ```
+
+## Docker Image
+
+We ship Docker images from CI. When run, they will serve all man-pages from the
+Ubuntu 20.04 based image. More man-pages you can be added in a few ways:
+
+### Build your own image
+
+```dockerfile
+FROM pbrisbin:bluebook:edge
+
+# From some official package
+RUN apt-get update -y && apt-get install -y {package-with-docs}
+
+# Or copy in locally installed
+COPY /usr/local/share/man/ /usr/local/share/man/
+COPY /usr/share/man/ /usr/share/man/
+```
+
+### Mount your local files
+
+```console
+docker run --rm \
+  --volume "$HOME/.local/share/man:/root/.local/share/man:ro" \
+  --publish 3000 \
+  pbrisbin/bluebook:edge
+```
 
 ## Motivation
 

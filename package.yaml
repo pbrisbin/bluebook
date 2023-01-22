@@ -57,6 +57,7 @@ library:
   source-dirs: src
   dependencies:
     - blaze-html
+    - envparse
     - errors
     - extra
     - filepath
@@ -65,6 +66,7 @@ library:
     - relude
     - shakespeare
     - unliftio
+    - xdg-basedir
     - zlib
 
 executables:
@@ -78,21 +80,17 @@ executables:
       - http-types
       - text
       - wai
+      - wai-extra
       - warp
     ghc-options:
       - -threaded
       - -rtsopts
       - -with-rtsopts=-N
 
-# tests:
-#   spec:
-#     main: Spec.hs
-#     source-dirs: test
-#     dependencies:
-#       - QuickCheck
-#       - aeson
-#       - bytestring
-#       - hspec
-#       - mtl
-#       - bluebook
-#       - yaml
+tests:
+  spec:
+    main: Spec.hs
+    source-dirs: test
+    dependencies:
+      - bluebook
+      - hspec
