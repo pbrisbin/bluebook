@@ -11,6 +11,7 @@ import Text.Shakespeare.Text (st)
 styles :: Text
 styles = [st|
 body {
+    color: #505050;
     font-family: sans-serif;
     margin-left: auto;
     margin-right: auto;
@@ -18,10 +19,11 @@ body {
 }
 
 header {
-    border-bottom: 1px solid #A00000;
+    border-bottom: 1px solid;
 }
 
 nav ul {
+    margin-bottom: 2em;
     margin-left: 0;
     padding-left: 0;
 }
@@ -42,7 +44,6 @@ em {
 }
 
 footer {
-    color: #808080;
     font-size: 90%;
     padding-bottom: 1em;
     padding-top: 1em;

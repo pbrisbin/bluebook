@@ -123,6 +123,14 @@ convertInlines = \case
             <> maybe [] (\p -> [Str p]) mP
             <> convertInlines rest
 
+    -- strong "foo(1)", ..., ...
+    (Strong [Str x] : rest) | (Right ref, mP) <- refAndPuncuation x ->
+        [linkManPage ref] <> maybe [] (\p -> [Str p]) mP <> convertInlines rest
+
+    -- emph "foo(1)", ..., ...
+    (Emph [Str x] : rest) | (Right ref, mP) <- refAndPuncuation x ->
+        [linkManPage ref] <> maybe [] (\p -> [Str p]) mP <> convertInlines rest
+
     -- "foo(1)", ..., ...
     (Str x : rest) | (Right ref, mP) <- refAndPuncuation x ->
         [linkManPage ref] <> maybe [] (\p -> [Str p]) mP <> convertInlines rest
