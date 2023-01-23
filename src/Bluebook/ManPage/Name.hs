@@ -6,6 +6,7 @@ module Bluebook.ManPage.Name
 
 import Bluebook.Prelude
 
+import Data.Char (isSpace)
 import qualified Data.Text as T
 
 newtype Name = Name
@@ -16,6 +17,7 @@ newtype Name = Name
 mkName :: Text -> Either String Name
 mkName n
     | T.null n = Left "Name cannot be empty"
+    | T.any isSpace n = Left "Name cannot contain whitespace"
     | otherwise = Right $ Name n
 
 getName :: Name -> Text

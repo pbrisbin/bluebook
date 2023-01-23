@@ -54,8 +54,9 @@ tryManPage2Html Settings {..} name = do
                 { Pandoc.writerExtensions = Pandoc.emptyExtensions
                 }
             . Pandoc.walk Pandoc.addHeaderLinks
-            . Pandoc.walk Pandoc.convertManPageRefs
             . Pandoc.walk Pandoc.reduceHeaderLevels
+            . Pandoc.walk Pandoc.convertManPageRefs
+            . Pandoc.walk Pandoc.linkBareUrls
             $ doc
 
         pure $ ManPageHtml

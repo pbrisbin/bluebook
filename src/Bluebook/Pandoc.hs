@@ -2,6 +2,7 @@ module Bluebook.Pandoc
     ( addHeaderLinks
     , reduceHeaderLevels
     , convertManPageRefs
+    , linkBareUrls
     , module X
     ) where
 
@@ -82,75 +83,51 @@ reduceHeaderLevels = \case
 -- ..., Str "foo(1)", ...
 -- ..., Emph/Strong (Str "foo(1)"), ...
 -- ..., Emph/Strong "foo", Str "(1)", ...
--- ..., Emph/String "foo", Emph/Strong "(1)", ...
+-- ..., Emph/Strong "foo", Emph/Strong "(1)", ...
 -- @
 --
 convertManPageRefs :: Block -> Block
-convertManPageRefs = \case
-    Plain is -> Plain $ convertInlines is
-    Para is -> Para $ convertInlines is
-    LineBlock iss -> LineBlock $ map convertInlines iss
-    x@CodeBlock{} -> x
-    x@RawBlock{} -> x
-    BlockQuote bs -> BlockQuote $ map convertManPageRefs bs
-    OrderedList x bss -> OrderedList x $ map (map convertManPageRefs) bss
-    BulletList bss -> BulletList $ map (map convertManPageRefs) bss
-    DefinitionList ibs -> DefinitionList
-        $ map (bimap convertInlines (map (map convertManPageRefs))) ibs
-    Header x y is -> Header x y $ convertInlines is
-    x@HorizontalRule{} -> x
-    x@Table{} -> x
-    Div x bs -> Div x $ map convertManPageRefs bs
-    x@Null{} -> x
-
-convertInlines :: [Inline] -> [Inline]
-convertInlines = \case
-    -- emph "foo", "(1)", ...
-    (Emph [Str x] : Str y : rest)
-        | (Right ref, mP) <- refAndPuncuation $ x <> y
-        -> [linkManPage ref]
-            <> maybe [] (\p -> [Str p]) mP
-            <> convertInlines rest
-
-    -- strong "foo", "(1)", ...
-    (Strong [Str x] : Str y : rest)
-        | (Right ref, mP) <- refAndPuncuation $ x <> y
-        -> [linkManPage ref]
-            <> maybe [] (\p -> [Str p]) mP
-            <> convertInlines rest
-
-    -- "foo", emph "(1)", ...
-    (Str x : Emph [Str y] : rest)
-        | (Right ref, mP) <- refAndPuncuation $ x <> y
-        -> [linkManPage ref]
-            <> maybe [] (\p -> [Str p]) mP
-            <> convertInlines rest
-
-    -- "foo", strong "(1)", ...
-    (Str x : Strong [Str y] : rest)
-        | (Right ref, mP) <- refAndPuncuation $ x <> y
-        -> [linkManPage ref]
-            <> maybe [] (\p -> [Str p]) mP
-            <> convertInlines rest
-
-    -- strong "foo(1)", ..., ...
-    (Strong [Str x] : rest) | (Right ref, mP) <- refAndPuncuation x ->
-        [linkManPage ref] <> maybe [] (\p -> [Str p]) mP <> convertInlines rest
-
-    -- emph "foo(1)", ..., ...
-    (Emph [Str x] : rest) | (Right ref, mP) <- refAndPuncuation x ->
-        [linkManPage ref] <> maybe [] (\p -> [Str p]) mP <> convertInlines rest
-
-    -- "foo(1)", ..., ...
-    (Str x : rest) | (Right ref, mP) <- refAndPuncuation x ->
-        [linkManPage ref] <> maybe [] (\p -> [Str p]) mP <> convertInlines rest
-
-    -- Skip
-    (a : rest) -> [a] <> convertInlines rest
-
-    -- Done
-    [] -> []
+convertManPageRefs = walkInlines go
   where
+    go = \case
+        -- emph "foo", "(1)", ...
+        (Emph [Str x] : Str y : rest)
+            | (Right ref, mP) <- refAndPuncuation $ x <> y
+            -> [linkManPage ref] <> maybe [] (\p -> [Str p]) mP <> go rest
+
+        -- strong "foo", "(1)", ...
+        (Strong [Str x] : Str y : rest)
+            | (Right ref, mP) <- refAndPuncuation $ x <> y
+            -> [linkManPage ref] <> maybe [] (\p -> [Str p]) mP <> go rest
+
+        -- "foo", emph "(1)", ...
+        (Str x : Emph [Str y] : rest)
+            | (Right ref, mP) <- refAndPuncuation $ x <> y
+            -> [linkManPage ref] <> maybe [] (\p -> [Str p]) mP <> go rest
+
+        -- "foo", strong "(1)", ...
+        (Str x : Strong [Str y] : rest)
+            | (Right ref, mP) <- refAndPuncuation $ x <> y
+            -> [linkManPage ref] <> maybe [] (\p -> [Str p]) mP <> go rest
+
+        -- strong "foo(1)", ..., ...
+        (Strong [Str x] : rest) | (Right ref, mP) <- refAndPuncuation x ->
+            [linkManPage ref] <> maybe [] (\p -> [Str p]) mP <> go rest
+
+        -- emph "foo(1)", ..., ...
+        (Emph [Str x] : rest) | (Right ref, mP) <- refAndPuncuation x ->
+            [linkManPage ref] <> maybe [] (\p -> [Str p]) mP <> go rest
+
+        -- "foo(1)", ..., ...
+        (Str x : rest) | (Right ref, mP) <- refAndPuncuation x ->
+            [linkManPage ref] <> maybe [] (\p -> [Str p]) mP <> go rest
+
+        -- Skip
+        (a : rest) -> [a] <> go rest
+
+        -- Done
+        [] -> []
+
     refAndPuncuation t
         | "." `T.isSuffixOf` t = (manPageFromRef $ T.dropEnd 1 t, Just ".")
         | "," `T.isSuffixOf` t = (manPageFromRef $ T.dropEnd 1 t, Just ",")
@@ -163,3 +140,47 @@ linkManPage page = Link
     nullAttr
     [Strong [Str $ manPageToRef page]]
     (manPageUrlPath page, manPageToRef page)
+
+linkBareUrls :: [Inline] -> [Inline]
+linkBareUrls = concatMap go
+  where
+    go :: Inline -> [Inline]
+    go = \case
+        Str x -> concatMap tryUrl $ T.words x
+        x -> [x]
+
+    tryUrl :: Text -> [Inline]
+    tryUrl t
+        | "http://" `T.isInfixOf` t = renderLink t
+        | "https://" `T.isInfixOf` t = renderLink t
+        | otherwise = [Str t]
+
+    renderLink :: Text -> [Inline]
+    renderLink t
+        | "." `T.isSuffixOf` t = renderLinkAndSuffix "." $ T.dropEnd 1 t
+        | "," `T.isSuffixOf` t = renderLinkAndSuffix "." $ T.dropEnd 1 t
+        | ":" `T.isSuffixOf` t = renderLinkAndSuffix "." $ T.dropEnd 1 t
+        | ";" `T.isSuffixOf` t = renderLinkAndSuffix "." $ T.dropEnd 1 t
+        | otherwise = [Link nullAttr [Str t] (t, t)]
+
+    renderLinkAndSuffix :: Text -> Text -> [Inline]
+    renderLinkAndSuffix suffix url =
+        [Link nullAttr [Str url] (url, url), Str suffix]
+
+walkInlines :: ([Inline] -> [Inline]) -> Block -> Block
+walkInlines f = \case
+    Plain is -> Plain $ f is
+    Para is -> Para $ f is
+    LineBlock iss -> LineBlock $ map f iss
+    x@CodeBlock{} -> x
+    x@RawBlock{} -> x
+    BlockQuote bs -> BlockQuote $ map (walkInlines f) bs
+    OrderedList x bss -> OrderedList x $ map (map (walkInlines f)) bss
+    BulletList bss -> BulletList $ map (map (walkInlines f)) bss
+    DefinitionList ibs ->
+        DefinitionList $ map (bimap f (map (map (walkInlines f)))) ibs
+    Header x y is -> Header x y $ f is
+    x@HorizontalRule{} -> x
+    x@Table{} -> x
+    Div x bs -> Div x $ map (walkInlines f) bs
+    x@Null{} -> x
