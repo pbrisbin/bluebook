@@ -14,6 +14,7 @@ import qualified Data.Text.IO as T
 import Network.HTTP.Types (Status, status200, status404, status405, status500)
 import Network.Wai
 import Network.Wai.Handler.Warp (run)
+import Network.Wai.Middleware.RequestLogger (logStdout)
 import System.FilePath ((</>))
 import Text.Blaze.Html (Html)
 import qualified Text.Blaze.Html.Renderer.Utf8 as Blaze
@@ -27,7 +28,10 @@ main = do
     hSetBuffering stderr LineBuffering
     settings@Settings {..} <- loadSettings
     putStrLn $ "Listening on port " <> show settingsPort
-    run settingsPort $ app settings
+    run settingsPort $ middleware $ app settings
+
+middleware :: Application -> Application
+middleware = logStdout
 
 app :: Settings -> Application
 app settings req respond = do

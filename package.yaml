@@ -80,6 +80,7 @@ executables:
       - http-types
       - text
       - wai
+      - wai-extra
       - warp
     ghc-options:
       - -threaded

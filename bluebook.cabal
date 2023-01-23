@@ -121,5 +121,6 @@ executable bluebook
     , http-types
     , text
     , wai
+    , wai-extra
     , warp
   default-language: Haskell2010

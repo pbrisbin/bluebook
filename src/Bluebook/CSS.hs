@@ -37,6 +37,33 @@ h1, h2, h3, h4, h5, h6, strong {
     color: #A00000;
 }
 
+h1 a,
+h2 a,
+h3 a,
+h4 a,
+h5 a,
+h6 a {
+    color: #A00000;
+}
+
+h1 a:link,
+h2 a:link,
+h3 a:link,
+h4 a:link,
+h5 a:link,
+h6 a:link {
+    text-decoration: none;
+}
+
+h1 a:hover,
+h2 a:hover,
+h3 a:hover,
+h4 a:hover,
+h5 a:hover,
+h6 a:hover {
+    text-decoration: underline;
+}
+
 em {
     color: #006000;
     font-style: normal;

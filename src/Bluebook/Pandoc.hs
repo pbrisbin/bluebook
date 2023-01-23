@@ -21,13 +21,23 @@ addHeaderLinks :: Block -> Block
 addHeaderLinks = linkIdentifiers . addIdentifiers
 
 linkIdentifiers :: Block -> Block
-linkIdentifiers = id -- TODO
+linkIdentifiers = \case
+    (Header n attr is) | Just identifier <- getIdentifier attr -> Header
+        n
+        attr
+        [Link nullAttr is ("#" <> identifier, "Link to this section")]
+    x -> x
 
 addIdentifiers :: Block -> Block
 addIdentifiers = \case
     (Header n attr is) | Just attr' <- addIdentifier is attr ->
         Header n attr' is
     x -> x
+
+getIdentifier :: Attr -> Maybe Text
+getIdentifier = \case
+    ("", _, _) -> Nothing
+    (x, _, _) -> Just x
 
 addIdentifier :: [Inline] -> Attr -> Maybe Attr
 addIdentifier is = \case
