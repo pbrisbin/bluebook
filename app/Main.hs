@@ -9,11 +9,12 @@ import qualified Bluebook.CSS as CSS
 import Bluebook.Listing
 import Bluebook.ManPage.Section
 import Bluebook.Settings
+import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Network.HTTP.Types (Status, status200, status404, status405, status500)
 import Network.Wai
 import Network.Wai.Handler.Warp (run)
-import System.FilePath (joinPath)
+import System.FilePath ((</>))
 import Text.Blaze.Html (Html)
 import qualified Text.Blaze.Html.Renderer.Utf8 as Blaze
 import qualified Text.Blaze.Html5 as Html
@@ -43,9 +44,8 @@ app settings req respond = do
                 listing <- buildListing settings q
                 respond $ html status200 "Bluebook" $ listingToHtml listing
 
-            ps -> do
-                let fileName = toManPageFileName ps
-                result <- tryManPage2Html settings fileName
+            ps | Right name <- toManPageFileName ps -> do
+                result <- tryManPage2Html settings name
 
                 case result of
                     Just (Left err) -> do
@@ -61,8 +61,19 @@ app settings req respond = do
                         Html.header $ Html.h1 "Not Found"
                         Html.p $ do
                             "The manual "
-                            Html.code $ toHtml fileName
+                            Html.code $ toHtml name
                             " is not present on this system."
+
+            -- health-check
+            ["ping"] -> do
+                respond $ html status200 "Hello world" $ do
+                    Html.header $ Html.h1 "Hello world"
+                    Html.p "This service is up."
+
+            _ -> do
+                respond $ html status404 "Not found" $ do
+                    Html.header $ Html.h1 "Not Found"
+                    Html.p "Page not found."
 
         m -> respond $ html status405 "Unsupported Method" $ do
             Html.header $ Html.h1 "Unsupported Method"
@@ -78,8 +89,15 @@ buildQuery = foldMap $ uncurry toQuery
     toQuery "q" (Just bs) = Just $ QueryByName $ decodeUtf8 bs
     toQuery _ _ = Nothing
 
-toManPageFileName :: [Text] -> FilePath
-toManPageFileName = dropSuffix ".html" . joinPath . map unpack
+-- | @man[1-8]/base.html@ -> @manX/base@
+toManPageFileName :: [Text] -> Either String FilePath
+toManPageFileName = \case
+    [man, page] -> do
+        base <- note "Missing .html" $ T.stripSuffix ".html" page
+        section <- sectionFromPath $ unpack man
+        pure $ sectionPath section </> unpack base
+
+    _ -> Left "Too many components"
 
 html :: Status -> Text -> Html -> Response
 html s title =
