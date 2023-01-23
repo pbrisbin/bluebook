@@ -26,7 +26,6 @@ library
   exposed-modules:
       Bluebook.Convert
       Bluebook.CSS
-      Bluebook.HTML
       Bluebook.Listing
       Bluebook.ManPage
       Bluebook.ManPage.Name

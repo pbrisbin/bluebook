@@ -5,7 +5,7 @@ module Main
 import Bluebook.Prelude
 
 import Bluebook.Convert
-import Bluebook.HTML as HTML
+import qualified Bluebook.CSS as CSS
 import Bluebook.Listing
 import Bluebook.ManPage.Section
 import Bluebook.Settings
@@ -17,6 +17,8 @@ import System.FilePath (joinPath)
 import Text.Blaze.Html (Html)
 import qualified Text.Blaze.Html.Renderer.Utf8 as Blaze
 import qualified Text.Blaze.Html5 as Html
+import Text.Blaze.Html5 (docTypeHtml, toHtml, toValue, (!))
+import qualified Text.Blaze.Html5.Attributes as Html hiding (style, title)
 
 main :: IO ()
 main = do
@@ -59,14 +61,14 @@ app settings req respond = do
                         Html.header $ Html.h1 "Not Found"
                         Html.p $ do
                             "The manual "
-                            Html.code $ Html.toHtml fileName
+                            Html.code $ toHtml fileName
                             " is not present on this system."
 
         m -> respond $ html status405 "Unsupported Method" $ do
             Html.header $ Html.h1 "Unsupported Method"
             Html.p $ do
                 "This server does not respond to the "
-                Html.code $ Html.toHtml $ show @Text m
+                Html.code $ toHtml $ show @Text m
                 " method"
 
 buildQuery :: [(ByteString, Maybe ByteString)] -> Maybe Query
@@ -83,4 +85,27 @@ html :: Status -> Text -> Html -> Response
 html s title =
     responseLBS s [("Content-Type", "text/html")]
         . Blaze.renderHtml
-        . HTML.layout title
+        . defaultLayout title
+
+defaultLayout :: Text -> Html -> Html
+defaultLayout title body = docTypeHtml $ do
+    Html.head $ do
+        Html.meta ! Html.charset "UTF-8"
+        Html.title $ toHtml title
+        Html.style $ toHtml CSS.styles
+    Html.body $ do
+        Html.nav $ do
+            Html.ul $ do
+                Html.li $ (Html.a ! Html.href "/") "Home"
+                for_ [minBound .. maxBound] $ \section -> do
+                    let path = sectionPath section
+                        link = toValue $ "/" <> path
+                    Html.li $ (Html.a ! Html.href link) $ toHtml path
+
+        body
+
+        Html.footer $ do
+            "Built with "
+            (Html.a ! Html.href "https://github.com/pbrisbin/bluebook")
+                "Bluebook"
+            " © 2023 Patrick Brisbin"
