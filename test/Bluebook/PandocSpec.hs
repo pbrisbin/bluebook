@@ -2,10 +2,10 @@ module Bluebook.PandocSpec
     ( spec
     ) where
 
-import Bluebook.Prelude
+import           Bluebook.Prelude
 
-import Bluebook.Pandoc
-import Test.Hspec
+import           Bluebook.Pandoc
+import           Test.Hspec
 
 spec :: Spec
 spec = do

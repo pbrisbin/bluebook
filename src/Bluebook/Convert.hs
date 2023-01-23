@@ -7,17 +7,17 @@ module Bluebook.Convert
     , tryManPage2Html
     ) where
 
-import Bluebook.Prelude
+import           Bluebook.Prelude
 
-import Bluebook.ManPage
-import qualified Bluebook.Pandoc as Pandoc
-import Bluebook.Settings
+import           Bluebook.ManPage
+import qualified Bluebook.Pandoc        as Pandoc
+import           Bluebook.Settings
 import qualified Codec.Compression.GZip as GZip
-import qualified Data.List.NonEmpty as NE
-import System.FilePath (takeExtension, (<.>), (</>))
-import Text.Blaze.Html (Html)
-import qualified Text.Blaze.Html5 as Html
-import UnliftIO.Directory (doesFileExist)
+import qualified Data.List.NonEmpty     as NE
+import           System.FilePath        (takeExtension, (<.>), (</>))
+import           Text.Blaze.Html        (Html)
+import qualified Text.Blaze.Html5       as Html
+import           UnliftIO.Directory     (doesFileExist)
 
 newtype ManPageError = PandocError Pandoc.PandocError
 
@@ -27,7 +27,7 @@ manPageErrorText = \case
 
 data ManPageHtml = ManPageHtml
     { manPageTitle :: Text
-    , manPageBody :: Html
+    , manPageBody  :: Html
     }
 
 tryManPage2Html

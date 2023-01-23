@@ -3,13 +3,13 @@ module Bluebook.Settings
     , loadSettings
     ) where
 
-import Bluebook.Prelude
+import           Bluebook.Prelude
 
 import qualified Env
 import qualified System.Environment.XDG.BaseDir as XDG
 
 data Settings = Settings
-    { settingsPort :: Int
+    { settingsPort    :: Int
     , settingsManPath :: [FilePath]
     }
 

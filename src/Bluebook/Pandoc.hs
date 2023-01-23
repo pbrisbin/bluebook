@@ -6,17 +6,17 @@ module Bluebook.Pandoc
     , module X
     ) where
 
-import Bluebook.Prelude
+import           Bluebook.Prelude
 
-import Bluebook.ManPage
-import qualified Data.Text as T
-import Text.Pandoc.Class as X
-import Text.Pandoc.Definition as X
-import Text.Pandoc.Error as X
-import Text.Pandoc.Options as X
-import Text.Pandoc.Readers.Man as X
-import Text.Pandoc.Walk as X
-import Text.Pandoc.Writers.HTML as X
+import           Bluebook.ManPage
+import qualified Data.Text                as T
+import           Text.Pandoc.Class        as X
+import           Text.Pandoc.Definition   as X
+import           Text.Pandoc.Error        as X
+import           Text.Pandoc.Options      as X
+import           Text.Pandoc.Readers.Man  as X
+import           Text.Pandoc.Walk         as X
+import           Text.Pandoc.Writers.HTML as X
 
 addHeaderLinks :: Block -> Block
 addHeaderLinks = linkIdentifiers . addIdentifiers
@@ -38,12 +38,12 @@ addIdentifiers = \case
 getIdentifier :: Attr -> Maybe Text
 getIdentifier = \case
     ("", _, _) -> Nothing
-    (x, _, _) -> Just x
+    (x, _, _)  -> Just x
 
 addIdentifier :: [Inline] -> Attr -> Maybe Attr
 addIdentifier is = \case
     ("", classes, kvs) -> Just (toIdentifier is, classes, kvs)
-    _ -> Nothing
+    _                  -> Nothing
 
 toIdentifier :: [Inline] -> Text
 toIdentifier =
@@ -55,27 +55,27 @@ toIdentifier =
 
 inlineText :: Inline -> [Text]
 inlineText = \case
-    Str t -> [t]
-    Emph is -> concatMap inlineText is
-    Underline is -> concatMap inlineText is
-    Strong is -> concatMap inlineText is
-    Strikeout is -> concatMap inlineText is
+    Str t          -> [t]
+    Emph is        -> concatMap inlineText is
+    Underline is   -> concatMap inlineText is
+    Strong is      -> concatMap inlineText is
+    Strikeout is   -> concatMap inlineText is
     Superscript is -> concatMap inlineText is
-    Subscript is -> concatMap inlineText is
-    SmallCaps is -> concatMap inlineText is
-    Quoted _ is -> concatMap inlineText is
-    Cite _ is -> concatMap inlineText is
-    Code _ t -> [t]
-    Link _ is _ -> concatMap inlineText is
-    Image _ is _ -> concatMap inlineText is
-    Span _ is -> concatMap inlineText is
-    _ -> []
+    Subscript is   -> concatMap inlineText is
+    SmallCaps is   -> concatMap inlineText is
+    Quoted _ is    -> concatMap inlineText is
+    Cite _ is      -> concatMap inlineText is
+    Code _ t       -> [t]
+    Link _ is _    -> concatMap inlineText is
+    Image _ is _   -> concatMap inlineText is
+    Span _ is      -> concatMap inlineText is
+    _              -> []
 
 reduceHeaderLevels :: Block -> Block
 reduceHeaderLevels = \case
     x@(Header 6 _ _) -> x
     Header n attr is -> Header (n + 1) attr is
-    x -> x
+    x                -> x
 
 -- |
 --
@@ -147,7 +147,7 @@ linkBareUrls = concatMap go
     go :: Inline -> [Inline]
     go = \case
         Str x -> concatMap tryUrl $ T.words x
-        x -> [x]
+        x     -> [x]
 
     tryUrl :: Text -> [Inline]
     tryUrl t

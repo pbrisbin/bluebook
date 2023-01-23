@@ -4,10 +4,10 @@ module Bluebook.ManPage.Name
     , getName
     ) where
 
-import Bluebook.Prelude
+import           Bluebook.Prelude
 
-import Data.Char (isSpace)
-import qualified Data.Text as T
+import           Data.Char        (isSpace)
+import qualified Data.Text        as T
 
 newtype Name = Name
     { unName :: Text

@@ -2,25 +2,29 @@ module Main
     ( main
     ) where
 
-import Bluebook.Prelude
+import           Bluebook.Prelude
 
-import Bluebook.Convert
-import qualified Bluebook.CSS as CSS
-import Bluebook.Listing
-import Bluebook.ManPage.Section
-import Bluebook.Settings
-import qualified Data.Text as T
-import qualified Data.Text.IO as T
-import Network.HTTP.Types (Status, status200, status404, status405, status500)
-import Network.Wai
-import Network.Wai.Handler.Warp (run)
-import Network.Wai.Middleware.RequestLogger (logStdout)
-import System.FilePath ((</>))
-import Text.Blaze.Html (Html)
-import qualified Text.Blaze.Html.Renderer.Utf8 as Blaze
-import qualified Text.Blaze.Html5 as Html
-import Text.Blaze.Html5 (docTypeHtml, toHtml, toValue, (!))
-import qualified Text.Blaze.Html5.Attributes as Html hiding (style, title)
+import           Bluebook.Convert
+import qualified Bluebook.CSS                         as CSS
+import           Bluebook.Listing
+import           Bluebook.ManPage.Section
+import           Bluebook.Settings
+import qualified Data.Text                            as T
+import qualified Data.Text.IO                         as T
+import           Network.HTTP.Types                   (Status, status200,
+                                                       status404, status405,
+                                                       status500)
+import           Network.Wai
+import           Network.Wai.Handler.Warp             (run)
+import           Network.Wai.Middleware.RequestLogger (logStdout)
+import           System.FilePath                      ((</>))
+import           Text.Blaze.Html                      (Html)
+import qualified Text.Blaze.Html.Renderer.Utf8        as Blaze
+import qualified Text.Blaze.Html5                     as Html
+import           Text.Blaze.Html5                     (docTypeHtml, toHtml,
+                                                       toValue, (!))
+import qualified Text.Blaze.Html5.Attributes          as Html hiding (style,
+                                                               title)
 
 main :: IO ()
 main = do
@@ -91,7 +95,7 @@ buildQuery = foldMap $ uncurry toQuery
   where
     toQuery :: ByteString -> Maybe ByteString -> Maybe Query
     toQuery "q" (Just bs) = Just $ QueryByName $ decodeUtf8 bs
-    toQuery _ _ = Nothing
+    toQuery _ _           = Nothing
 
 -- | @man[1-8]/base.html@ -> @manX/base@
 toManPageFileName :: [Text] -> Either String FilePath

@@ -4,9 +4,9 @@ module Bluebook.CSS
     ( styles
     ) where
 
-import Bluebook.Prelude
+import           Bluebook.Prelude
 
-import Text.Shakespeare.Text (st)
+import           Text.Shakespeare.Text (st)
 
 styles :: Text
 styles = [st|
