@@ -40,7 +40,12 @@ h1, h2, h3, h4, h5, h6, strong {
 em {
     color: #006000;
     font-style: normal;
-    font-weight: bold;
+    font-weight: 700;
+}
+
+/* work around bug in some of our docs */
+em strong {
+    font-weight: 700;
 }
 
 footer {
