@@ -22,7 +22,6 @@ import qualified Text.Blaze.Html5.Attributes as Html hiding (style, title)
 
 import qualified Bluebook.CSS as CSS
 import Bluebook.ManPage.Section
-import qualified Data.Text.IO as T
 import Network.HTTP.Types (hContentType)
 import Servant
 import Text.Blaze.Html (Html)
@@ -53,38 +52,40 @@ defaultLayout title body = docTypeHtml $ do
                 "Bluebook"
             " © 2023 Patrick Brisbin"
 
-throwBadRequest :: Html -> Handler a
+throwBadRequest :: MonadError ServerError m => Html -> m a
 throwBadRequest body = throwError err400
     { errBody = Blaze.renderHtml $ defaultLayout "Bad Request" body
     , errHeaders = [(hContentType, "text/html")]
     }
 
-throwNotFound :: Html -> Handler a
+throwNotFound :: MonadError ServerError m => Html -> m a
 throwNotFound body = throwError err404
     { errBody = Blaze.renderHtml $ defaultLayout "Not Found" body
     , errHeaders = [(hContentType, "text/html")]
     }
 
-throwServerError :: Html -> Handler a
+throwServerError :: MonadError ServerError m => Html -> m a
 throwServerError body = throwError err500
     { errBody = Blaze.renderHtml $ defaultLayout "Server Error" body
     , errHeaders = [(hContentType, "text/html")]
     }
 
-fromMaybeNotFound :: Maybe a -> Handler a
+fromMaybeNotFound :: MonadError ServerError m => Maybe a -> m a
 fromMaybeNotFound = flip maybe pure $ throwNotFound $ do
     Html.header $ Html.h1 "Not Found"
     Html.p "This page does not exist."
 
-fromEitherBadRequest :: (e -> Text) -> Either e a -> Handler a
+fromEitherBadRequest
+    :: MonadError ServerError m => (e -> Text) -> Either e a -> m a
 fromEitherBadRequest toMessage = flip either pure $ \err -> do
     throwBadRequest $ do
         Html.header $ Html.h1 "Bad Request"
         Html.p $ toHtml $ toMessage err
 
-fromEitherServerError :: Either Text a -> Handler a
+fromEitherServerError
+    :: (MonadLogger m, MonadError ServerError m) => Either Text a -> m a
 fromEitherServerError = flip either pure $ \err -> do
-    liftIO $ T.hPutStrLn stderr $ "[ERROR]: " <> err
+    logError $ "Internal Server Error" :# ["error" .= err]
     throwServerError $ do
         Html.header $ Html.h1 "Internal Server Error"
         Html.p "There was an error processing this manual"

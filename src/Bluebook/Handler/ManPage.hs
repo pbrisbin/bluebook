@@ -19,24 +19,38 @@ import Servant.HTML.Blaze
 -- brittany-disable-next-binding
 
 type ManPageAPI = Get '[HTML] Html
+    -- TODO: /convert
 
-handleManPage :: Settings -> Section -> Name -> Server ManPageAPI
+handleManPage
+    :: ( MonadIO m
+       , MonadLogger m
+       , MonadError ServerError m
+       , MonadReader env m
+       , HasManPath env
+       )
+    => Section
+    -> Name
+    -> ServerT ManPageAPI m
 handleManPage = handleGetManPage
 
-handleGetManPage :: Settings -> Section -> Name -> Handler Html
-handleGetManPage settings section name = do
-    renderMan2Html ref
-        =<< readManPage
-        =<< fromMaybeNotFound
-        =<< findManPage settings section name
-    where ref = getName name <> sectionRef section
+handleGetManPage
+    :: ( MonadIO m
+       , MonadLogger m
+       , MonadError ServerError m
+       , MonadReader env m
+       , HasManPath env
+       )
+    => Section
+    -> Name
+    -> m Html
+handleGetManPage section =
+    renderMan2Html <=< readManPage <=< fromMaybeNotFound <=< findManPage section
 
-renderMan2Html :: Text -> Text -> Handler Html
-renderMan2Html ref body = do
+renderMan2Html
+    :: (MonadIO m, MonadLogger m, MonadError ServerError m) => Text -> m Html
+renderMan2Html body = do
     page <-
-        fromEitherServerError
-        . first manPageErrorText
-        =<< tryManPage2Html ref body
+        fromEitherServerError . first manPageErrorText =<< tryManPage2Html body
 
     let title = "Bluebook - " <> manPageTitle page
     pure $ defaultLayout title $ manPageBody page
