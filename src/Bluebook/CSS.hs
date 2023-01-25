@@ -19,11 +19,8 @@ body {
     max-width: 960px;
 }
 
-header {
-    border-bottom: 1px solid;
-}
-
 nav ul {
+    font-family: monospace;
     margin-bottom: 2em;
     margin-left: 0;
     padding-left: 0;
@@ -82,6 +79,25 @@ strong a {
 
 em a {
     color: #006000;
+}
+
+ul.man-page-footer {
+    display: flex;
+    font-family: monospace;
+    list-style: none;
+    margin-top: 2em;
+    padding: 0;
+}
+
+.man-page-footer li {
+    width: 100%
+}
+
+.man-page-footer li:nth-child(2) {
+    text-align: center;
+}
+.man-page-footer li:nth-child(3) {
+    text-align: right;
 }
 
 footer {

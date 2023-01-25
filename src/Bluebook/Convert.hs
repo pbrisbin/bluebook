@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 module Bluebook.Convert
     ( ManPageError
     , manPageErrorText
@@ -16,18 +18,26 @@ import Bluebook.ManPage.Section
 import qualified Bluebook.Pandoc as Pandoc
 import Bluebook.Settings
 import qualified Codec.Compression.GZip as GZip
+import Control.Monad.Except (throwError, withExceptT)
+import Control.Monad.Extra (findM)
 import qualified Data.List.NonEmpty as NE
-import qualified Data.Text.IO as T
 import System.FilePath (takeExtension, (<.>), (</>))
-import Text.Blaze.Html (Html)
+import Text.Blaze.Html (Html, toHtml, (!))
 import qualified Text.Blaze.Html5 as Html
+import qualified Text.Blaze.Html5.Attributes as Html (class_)
 import UnliftIO.Directory (doesFileExist)
 
-newtype ManPageError = PandocError Pandoc.PandocError
+data ManPageError
+    = PandocError Pandoc.PandocError
+    | MissingMetaError Text
+    | InvalidMetaError Text String
 
 manPageErrorText :: ManPageError -> Text
 manPageErrorText = \case
     PandocError e -> Pandoc.renderError e
+    MissingMetaError k -> "Key " <> k <> " not found in document metadata"
+    InvalidMetaError k err ->
+        "Key " <> k <> " in document metadata is invalid: " <> pack err
 
 data ManPageHtml = ManPageHtml
     { manPageTitle :: Text
@@ -35,35 +45,73 @@ data ManPageHtml = ManPageHtml
     }
 
 tryManPage2Html
-    :: MonadIO m
-    => Text -- ^ Title
-    -> Text -- ^ Content
-    -> m (Either ManPageError ManPageHtml)
-tryManPage2Html title body = runPandoc $ do
-    liftIO $ T.putStrLn $ "[man2html]: input=" <> body
-    doc <- Pandoc.readMan Pandoc.def body
-    liftIO $ T.putStrLn $ "[man2html]: output=" <> pack (show doc)
-    html <-
-        Pandoc.writeHtml5 Pandoc.def
-        . Pandoc.walk Pandoc.addHeaderLinks
-        . Pandoc.walk Pandoc.reduceHeaderLevels
-        . Pandoc.walk Pandoc.convertManPageRefs
-        . Pandoc.walk Pandoc.linkBareUrls
-        $ doc
+    :: (MonadIO m, MonadLogger m) => Text -> m (Either ManPageError ManPageHtml)
+tryManPage2Html body = runExceptT $ do
+    (meta, html) <-
+        withExceptT PandocError $ ExceptT $ liftIO $ Pandoc.runIO $ do
+            doc <- Pandoc.readMan Pandoc.def body
+            let Pandoc.Pandoc meta _ = doc
+
+            fmap (meta, )
+                . Pandoc.writeHtml5 Pandoc.def
+                . Pandoc.walk Pandoc.addHeaderLinks
+                . Pandoc.walk Pandoc.reduceHeaderLevels
+                . Pandoc.walk Pandoc.convertManPageRefs
+                . Pandoc.walk Pandoc.linkBareUrls
+                $ doc
+
+    date <- textMetaValue <$> requireMeta "date" meta
+    title <- textMetaValue <$> requireMeta "title" meta
+    section <- sectionFromMetaValue =<< requireMeta "section" meta
+
+    let titleRef = title <> sectionRef section
+
+    logDebug $ "man2html" :# ["input" .= body, "metadata" .= show @Text meta]
 
     pure $ ManPageHtml
-        { manPageTitle = title
+        { manPageTitle = titleRef
         , manPageBody = do
-            Html.header $ Html.h1 $ Html.toHtml title
+            Html.header $ Html.h1 $ Html.toHtml titleRef
             html
+            Html.ul ! Html.class_ "man-page-footer" $ do
+                Html.li $ toHtml $ sectionName section
+                Html.li $ toHtml date
+                Html.li $ toHtml titleRef
         }
 
-findManPage :: MonadIO m => Settings -> Section -> Name -> m (Maybe FilePath)
-findManPage Settings {..} section name =
-    fmap (fmap NE.head . NE.nonEmpty)
-        . filterM doesFileExist
-        . concatMap toPaths
-        $ settingsManPath
+requireMeta
+    :: MonadError ManPageError m => Text -> Pandoc.Meta -> m Pandoc.MetaValue
+requireMeta k = maybe err pure . Pandoc.lookupMeta k
+    where err = throwError $ MissingMetaError k
+
+-- | We only work with 'MetaInlines' because we know that's all we need
+textMetaValue :: Pandoc.MetaValue -> Text
+textMetaValue = \case
+    Pandoc.MetaInlines is -> mconcat $ map go is
+    _ -> ""
+  where
+    go = \case
+        Pandoc.Str x -> x
+        Pandoc.Space -> " "
+        _ -> ""
+
+sectionFromMetaValue
+    :: MonadError ManPageError m => Pandoc.MetaValue -> m Section
+sectionFromMetaValue =
+    either (throwError . InvalidMetaError "section") pure
+        . sectionFromSuffix
+        . unpack
+        . ("." <>)
+        . textMetaValue
+
+findManPage
+    :: (MonadIO m, MonadReader env m, HasManPath env)
+    => Section
+    -> Name
+    -> m (Maybe FilePath)
+findManPage section name = do
+    manPath <- view manPathL
+    findM doesFileExist $ concatMap toPaths manPath
   where
     path = sectionPath section </> unpack (getName name)
     toPaths dir = [dir </> path, dir </> path <.> "gz"]
@@ -74,6 +122,3 @@ readManPage path = decodeUtf8 . toStrict . decompress <$> readFileLBS path
     decompress
         | takeExtension path == ".gz" = GZip.decompress
         | otherwise = id
-
-runPandoc :: MonadIO m => Pandoc.PandocIO c -> m (Either ManPageError c)
-runPandoc f = liftIO $ first PandocError <$> Pandoc.runIO f

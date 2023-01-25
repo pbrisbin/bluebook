@@ -55,12 +55,14 @@ matchesQuery mp = \case
     QueryByName t -> t `T.isInfixOf` manPageName mp
     QueryAnd q1 q2 -> mp `matchesQuery` q1 && mp `matchesQuery` q2
 
-buildListing :: MonadIO m => Settings -> Query -> m Listing
-buildListing Settings {..} q = do
+buildListing
+    :: (MonadIO m, MonadReader env m, HasManPath env) => Query -> m Listing
+buildListing q = do
+    manPath <- view manPathL
     results <- for [minBound .. maxBound] $ \s -> do
-        for settingsManPath $ \manPath -> do
+        for manPath $ \mp -> do
             let prefix = sectionPath s
-                manDir = manPath </> prefix
+                manDir = mp </> prefix
 
             exists <- doesDirectoryExist manDir
             if exists

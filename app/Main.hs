@@ -7,6 +7,7 @@ module Main
 
 import Bluebook.Prelude
 
+import Bluebook.App
 import Bluebook.Handler.Html
 import Bluebook.Handler.ManPage.Section
 import Bluebook.Handler.Ping
@@ -15,7 +16,7 @@ import Bluebook.ManPage.Section
 import Bluebook.Settings
 import Network.Wai
 import Network.Wai.Handler.Warp (run)
-import Network.Wai.Middleware.RequestLogger (logStdout)
+import Network.Wai.Middleware.Logging
 import Servant
 import Servant.HTML.Blaze
 
@@ -31,18 +32,31 @@ main = do
     hSetBuffering stdout LineBuffering
     hSetBuffering stderr LineBuffering
     settings@Settings {..} <- loadSettings
-    putStrLn $ "Listening on port " <> show settingsPort
-    run settingsPort $ middleware $ app settings
+    app <- loadApp settings
+    runLoggerLoggingT app
+        $ logInfo
+        $ "Starting up"
+        :# ["port" .= settingsPort, "MAN_PATH" .= settingsManPath]
+    run settingsPort $ middleware app $ waiApp app
 
-app :: Settings -> Application
-app = serve api . server
+waiApp :: (HasLogger env, HasManPath env) => env -> Application
+waiApp = serve api . server
 
 api :: Proxy API
 api = Proxy
 
-server :: Settings -> Server API
-server settings =
-    handleGetRoot settings :<|> handleSection settings :<|> handleGetPing
+server :: (HasLogger env, HasManPath env) => env -> Server API
+server env = hoistServer api (`runAppT` env) server'
 
-middleware :: Application -> Application
-middleware = logStdout
+server'
+    :: ( MonadIO m
+       , MonadLogger m
+       , MonadError ServerError m
+       , MonadReader env m
+       , HasManPath env
+       )
+    => ServerT API m
+server' = handleGetRoot :<|> handleSection :<|> handleGetPing
+
+middleware :: HasLogger env => env -> Middleware
+middleware = requestLogger

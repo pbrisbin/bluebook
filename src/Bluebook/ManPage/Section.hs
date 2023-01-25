@@ -7,6 +7,7 @@ module Bluebook.ManPage.Section
     , sectionRef
     , sectionSuffix
     , sectionPath
+    , sectionName
     ) where
 
 import Bluebook.Prelude
@@ -74,3 +75,14 @@ sectionSuffix = ("." <>) . show . sectionNumber
 
 sectionPath :: Section -> FilePath
 sectionPath = ("man" <>) . show . sectionNumber
+
+sectionName :: Section -> Text
+sectionName = \case
+    Section1 -> "User Commands"
+    Section2 -> "System Calls"
+    Section3 -> "Library Calls"
+    Section4 -> "Devices"
+    Section5 -> "Files"
+    Section6 -> "Games"
+    Section7 -> "Overviews, Conventions, and Miscellaneous"
+    Section8 -> "System Management Commands"

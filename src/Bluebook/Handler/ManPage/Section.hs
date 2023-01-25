@@ -23,14 +23,26 @@ type SectionAPI
        = QueryParam "q" Text :> Get '[HTML] Html
     :<|> Capture "page" Name :> ManPageAPI
 
-handleSection :: Settings -> Section -> Server SectionAPI
-handleSection settings section =
-    handleGetSection settings section :<|> handleManPage settings section
+handleSection
+    :: ( MonadIO m
+       , MonadLogger m
+       , MonadError ServerError m
+       , MonadReader env m
+       , HasManPath env
+       )
+    => Section
+    -> ServerT SectionAPI m
+handleSection section = handleGetSection section :<|> handleManPage section
 
-handleGetSection :: Settings -> Section -> Maybe Text -> Handler Html
-handleGetSection settings section mQ = do
-    let s = QueryBySection section
-        q = maybe s ((s <>) . QueryByName) mQ
-    listing <- buildListing settings q
-    let title = "Bluebook - " <> pack (sectionPath section)
-    pure $ defaultLayout title $ listingToHtml listing
+handleGetSection
+    :: (MonadIO m, MonadReader env m, HasManPath env)
+    => Section
+    -> Maybe Text
+    -> m Html
+handleGetSection section =
+    fmap (defaultLayout title . listingToHtml) . buildListing . maybe
+        s
+        ((s <>) . QueryByName)
+  where
+    s = QueryBySection section
+    title = "Bluebook - " <> pack (sectionPath section)
