@@ -8,11 +8,15 @@ import Bluebook.Prelude
 
 import Data.Char (isSpace)
 import qualified Data.Text as T
+import Web.HttpApiData (FromHttpApiData(..))
 
 newtype Name = Name
     { unName :: Text
     }
     deriving newtype (Eq, Ord, Show)
+
+instance FromHttpApiData Name where
+    parseUrlPiece = first pack . mkName
 
 mkName :: Text -> Either String Name
 mkName n

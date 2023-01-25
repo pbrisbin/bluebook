@@ -11,6 +11,8 @@ module Bluebook.ManPage.Section
 
 import Bluebook.Prelude
 
+import Web.HttpApiData (FromHttpApiData(..))
+
 data Section
     = Section1
     | Section2
@@ -21,6 +23,9 @@ data Section
     | Section7
     | Section8
     deriving stock (Eq, Ord, Show, Bounded, Enum)
+
+instance FromHttpApiData Section where
+    parseUrlPiece = first pack . sectionFromPath . unpack
 
 sectionFromRef :: Text -> Either String Section
 sectionFromRef = \case

@@ -61,9 +61,13 @@ library:
     - errors
     - extra
     - filepath
+    - http-api-data
+    - http-types
     - pandoc
     - pandoc-types
     - relude
+    - servant-blaze
+    - servant-server
     - shakespeare
     - unliftio
     - xdg-basedir
@@ -74,11 +78,9 @@ executables:
     main: Main.hs
     source-dirs: app
     dependencies:
-      - blaze-html
       - bluebook
-      - filepath
-      - http-types
-      - text
+      - servant-blaze
+      - servant-server
       - wai
       - wai-extra
       - warp

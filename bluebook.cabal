@@ -26,6 +26,11 @@ library
   exposed-modules:
       Bluebook.Convert
       Bluebook.CSS
+      Bluebook.Handler.Html
+      Bluebook.Handler.ManPage
+      Bluebook.Handler.ManPage.Section
+      Bluebook.Handler.Ping
+      Bluebook.Handler.Root
       Bluebook.Listing
       Bluebook.ManPage
       Bluebook.ManPage.Name
@@ -71,9 +76,13 @@ library
     , errors
     , extra
     , filepath
+    , http-api-data
+    , http-types
     , pandoc
     , pandoc-types
     , relude
+    , servant-blaze
+    , servant-server
     , shakespeare
     , unliftio
     , xdg-basedir
@@ -115,11 +124,9 @@ executable bluebook
   ghc-options: -fwrite-ide-info -Weverything -Wno-all-missed-specialisations -Wno-missing-import-lists -Wno-missing-kind-signatures -Wno-missing-local-signatures -Wno-missing-safe-haskell-mode -Wno-prepositive-qualified-module -Wno-unsafe -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base ==4.*
-    , blaze-html
     , bluebook
-    , filepath
-    , http-types
-    , text
+    , servant-blaze
+    , servant-server
     , wai
     , wai-extra
     , warp
