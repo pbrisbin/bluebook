@@ -44,12 +44,10 @@ manPageFromRef t = do
 manPageToRef :: ManPage -> Text
 manPageToRef ManPage {..} = getName name <> sectionRef section
 
--- @{ name:foo, section:1 }@ -> @/man1/foo.1.html@
+-- @{ name:foo, section:1 }@ -> @/man1/foo.1@
 manPageUrlPath :: ManPage -> Text
-manPageUrlPath ManPage {..} =
-    "/"
-        <> pack (sectionPath section)
-        <> "/"
-        <> getName name
-        <> pack (sectionSuffix section)
-        <> ".html"
+manPageUrlPath ManPage {..} = mconcat
+    [ "/" <> pack (sectionPath section)
+    , "/" <> getName name
+    , pack $ sectionSuffix section
+    ]
