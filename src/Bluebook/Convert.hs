@@ -20,7 +20,6 @@ import Bluebook.Settings
 import qualified Codec.Compression.GZip as GZip
 import Control.Monad.Except (throwError, withExceptT)
 import Control.Monad.Extra (findM)
-import qualified Data.List.NonEmpty as NE
 import System.FilePath (takeExtension, (<.>), (</>))
 import Text.Blaze.Html (Html, toHtml, (!))
 import qualified Text.Blaze.Html5 as Html
