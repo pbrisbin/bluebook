@@ -1,90 +1,42 @@
-# Bluebook
+# BLUEBOOK(1)
 
-Renderer / web-server for man-pages present on (I assume) Unix-like systems.
+## NAME
 
-## Usage
+bluebook - nicely render man-pages to html, with cross-linking
 
-### Web Server
+## SYNOPSIS
 
-```console
-bluebook serve
-```
+**bluebook** [**\--out**=*PATH*]
 
-Launches a web server where the local man-pages can be browsed.
+## DESCRIPTION
 
-![](./screenshots/platform.1.png)
+Bluebook converts man-pages to html. In so doing, it applies styles and
+conversions to make the pages useful for browsing. This includes cross-linking
+references to other man-pages, and converting any bare URLs to actual HTML
+links.
 
-#### Configuration
+The files Bluebook creates are meant to be served by a web-server, not browsed
+directly on the file-system. See _EXAMPLES_.
 
-- `PORT`: port to listen on, default is `3000`
-- `APPROOT`: base to use for URLs, default is none
-- `MANPATH`: used to define where to search for man-pages, default is
+## OPTIONS
 
-  ```
-  ${XDG_DATA_DIR:-$HOME/.local/share}/man:/usr/local/share/man:/usr/share/man
-  ```
+**\-o**, **\--out** _\<PATH\>_
 
-### CLI
+> Write html files in this directory, default is _./dist_.
 
-```console
-bluebook write
-```
+## ENVIRONMENT
 
-Converts man-pages into a directory of local HTML files.
+**MANPATH**
 
-```
-Usage: bluebook write [-o|--out PATH] [--web-links] [--app-root PATH|URL] 
-                      [--man-path PATH [--man-path PATH]]
+> `:`-separated list of directories to search for man-pages. Default is,
+>
+> ```
+> ${XDG_DATA_DIR:-$HOME/.local/share}/man:/usr/local/share/man:/usr/share/man
+> ```
 
-  Write local man-pages
+## NOTES
 
-Available options:
-  -o,--out PATH            Write man-pages into this directory
-  --web-links              Render links for later serving, not for file://
-  --app-root PATH|URL      Render links with the following root
-  --man-path PATH          Include man-pages from this path
-  --man-path PATH          Include man-pages from this path
-  -h,--help                Show this help text
-```
-
-## Docker Image
-
-We ship Docker images from CI. When run, they will serve all man-pages from the
-Ubuntu 20.04 based image. More man-pages you can be added in a few ways:
-
-**Build your own image**:
-
-```dockerfile
-FROM pbrisbin:bluebook:edge
-
-# From some official package
-RUN apt-get update -y && apt-get install -y {package-with-docs}
-
-# Or copy in locally installed
-COPY /usr/local/share/man/ /usr/local/share/man/
-COPY /usr/share/man/ /usr/share/man/
-```
-
-**Mount your local files**:
-
-```console
-docker run --rm \
-  --volume "$HOME/.local/share/man:/root/.local/share/man:ro" \
-  --publish 3000 \
-  pbrisbin/bluebook:edge bluebook serve
-```
-
-The image can also be used to produce local HTML files:
-
-```console
-docker run --rm \
-  --volume "$PWD"/dist:/dist
-  pbrisbin/bluebook:edge bluebook write --out /dist
-```
-
-Note that the files will come out `root`-owned.
-
-## Motivation
+You may wonder,
 
 **Why not use [die.net](https://linux.die.net/man/), or
 [kernel.org](https://www.kernel.org/doc/man-pages/),
@@ -106,14 +58,28 @@ I could not find a tool that did the minimal things I need:
 
 If you know of such a tool, do let me know!
 
-## Development
+## EXAMPLES
 
-We use the Haskell tool Stack:
+Convert all your system's man-pages into the `./dist` directory,
 
-```console
-stack setup
-stack build --dependencies-only
-stack build --fast --pedantic --test --file-watch
+```
+bluebook
+```
+
+Serve them,
+
+```
+docker run \
+  --detach \
+  --publish 8080:80 \
+  --volume "$PWD"/dist:/usr/share/nginx/html:ro \
+  nginx
+```
+
+And browse them,
+
+```
+$BROWSER http://localhost:8080
 ```
 
 ---

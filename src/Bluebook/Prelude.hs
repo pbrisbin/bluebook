@@ -3,7 +3,6 @@ module Bluebook.Prelude
     ) where
 
 import Blammo.Logging as X
-import Bluebook.Orphans ()
 import Control.Error.Util as X (hush, note)
 import Control.Monad.Error.Class as X (MonadError)
 import Control.Monad.IO.Unlift as X (MonadUnliftIO(..))

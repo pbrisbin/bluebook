@@ -9,11 +9,11 @@ module Bluebook.Pandoc
 import Bluebook.Prelude
 
 import Bluebook.ManPage
-import Bluebook.RenderLink
 import qualified Data.Text as T
 import Text.Pandoc.Class as X
 import Text.Pandoc.Definition as X
 import Text.Pandoc.Error as X
+import Text.Pandoc.Logging as X
 import Text.Pandoc.Options as X
 import Text.Pandoc.Readers.Man as X
 import Text.Pandoc.Walk as X
@@ -63,36 +63,34 @@ reduceHeaderLevels = \case
     Header n attr inner -> Header (min 6 (n + 1)) attr inner
     x -> x
 
-convertManPageRefs :: RenderLink -> [Inline] -> [Inline]
-convertManPageRefs rl = \case
+convertManPageRefs :: [Inline] -> [Inline]
+convertManPageRefs = \case
     (Emph [Str x] : Str y : rest)
-        | Right inner <- parse (Emph . pure) $ x <> y
-        -> inner <> convertManPageRefs rl rest
+        | Right inner <- parse (Emph . pure) $ x <> y -> inner
+        <> convertManPageRefs rest
 
     (Strong [Str x] : Str y : rest)
-        | Right inner <- parse (Strong . pure) $ x <> y
-        -> inner <> convertManPageRefs rl rest
+        | Right inner <- parse (Strong . pure) $ x <> y -> inner
+        <> convertManPageRefs rest
 
     (Str x : Emph [Str y] : rest)
-        | Right inner <- parse (Emph . pure) $ x <> y
-        -> inner <> convertManPageRefs rl rest
+        | Right inner <- parse (Emph . pure) $ x <> y -> inner
+        <> convertManPageRefs rest
 
     (Str x : Strong [Str y] : rest)
-        | Right inner <- parse (Strong . pure) $ x <> y
-        -> inner <> convertManPageRefs rl rest
+        | Right inner <- parse (Strong . pure) $ x <> y -> inner
+        <> convertManPageRefs rest
 
     (Str x : rest) | Right inner <- parse id x ->
-        inner <> convertManPageRefs rl rest
+        inner <> convertManPageRefs rest
 
-    (a : rest) -> a : convertManPageRefs rl rest
+    (a : rest) -> a : convertManPageRefs rest
 
     [] -> []
-  where
-    parse f = withPunctuation $ fmap (f . linkManPage rl) . manPageFromRef
+    where parse f = withPunctuation $ fmap (f . linkManPage) . manPageFromRef
 
-linkManPage :: RenderLink -> ManPage -> Inline
-linkManPage rl page =
-    link [Str $ manPageToRef page] $ renderLinkToFile rl $ manPageUrlPath page
+linkManPage :: ManPage -> Inline
+linkManPage page = link [Str $ manPageToRef page] $ "/" <> manPageUrlPath page
 
 linkBareUrls :: [Inline] -> [Inline]
 linkBareUrls = concatMap $ \case

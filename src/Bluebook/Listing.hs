@@ -2,16 +2,17 @@ module Bluebook.Listing
     ( Listing
     , listingManPages
     , listingToHtml
-    , Query(..)
     , buildListing
+    , Query(..)
+    , filterListing
     ) where
 
 import Bluebook.Prelude
 
 import Bluebook.ManPage
+import Bluebook.ManPage.Name
 import Bluebook.ManPage.Section
-import Bluebook.RenderLink
-import Bluebook.Settings
+import Bluebook.ManPath
 import qualified Data.Text as T
 import System.FilePath ((</>))
 import Text.Blaze.Html5
@@ -24,20 +25,38 @@ data Listing = Listing
     , listingManPages :: [ManPage]
     }
 
-listingToHtml :: (MonadReader env m, HasRenderLink env) => Listing -> m Html
+listingToHtml :: Listing -> Html
 listingToHtml listing = do
-    rl <- view renderLinkL
-    pure $ do
-        header $ h2 $ toHtml $ ("Listing: " <>) $ queryToText $ listingQuery
-            listing
-        section $ ul $ traverse_ (listItem rl) $ listingManPages listing
+    header $ h2 $ toHtml $ ("Listing: " <>) $ queryToText $ listingQuery listing
+    section $ ul $ traverse_ listItem $ listingManPages listing
   where
-    listItem rl page =
+    listItem page =
         li
             $ a
-            ! href (toValue $ renderLinkToFile rl $ manPageUrlPath page)
+            ! href (toValue $ "/" <> manPageUrlPath page)
             $ toHtml
             $ manPageToRef page
+
+buildListing :: (MonadIO m, MonadReader env m, HasManPath env) => m Listing
+buildListing = do
+    manPath <- view manPathL
+    results <- for [minBound .. maxBound] $ \s -> do
+        for manPath $ \mp -> do
+            let prefix = sectionPath s
+                manDir = mp </> prefix
+
+            exists <- doesDirectoryExist manDir
+            if exists
+                then map (prefix </>) <$> listDirectory manDir
+                else pure []
+
+    pure
+        $ Listing QueryAll
+        $ sort
+        $ rights
+        $ map manPageFromFile
+        $ concat
+        $ concat results
 
 data Query
     = QueryAll
@@ -60,28 +79,11 @@ matchesQuery :: ManPage -> Query -> Bool
 matchesQuery mp = \case
     QueryAll -> True
     QueryBySection s -> manPageSection mp == s
-    QueryByName t -> t `T.isInfixOf` manPageName mp
+    QueryByName t -> t `T.isInfixOf` getName (manPageName mp)
     QueryAnd q1 q2 -> mp `matchesQuery` q1 && mp `matchesQuery` q2
 
-buildListing
-    :: (MonadIO m, MonadReader env m, HasManPath env) => Query -> m Listing
-buildListing q = do
-    manPath <- view manPathL
-    results <- for [minBound .. maxBound] $ \s -> do
-        for manPath $ \mp -> do
-            let prefix = sectionPath s
-                manDir = mp </> prefix
-
-            exists <- doesDirectoryExist manDir
-            if exists
-                then map (prefix </>) <$> listDirectory manDir
-                else pure []
-
-    pure
-        $ Listing q
-        $ sort
-        $ filter (`matchesQuery` q)
-        $ rights
-        $ map manPageFromFile
-        $ concat
-        $ concat results
+filterListing :: Query -> Listing -> Listing
+filterListing q listing = listing
+    { listingQuery = q
+    , listingManPages = filter (`matchesQuery` q) $ listingManPages listing
+    }
