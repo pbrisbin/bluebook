@@ -10,7 +10,7 @@ bluebook
 
 Launches a web server where the local man-pages can be browsed.
 
-![](./screenshots/stackctl.1.png)
+![](./screenshots/platform.1.png)
 
 ## Configuration
 
