@@ -22,8 +22,8 @@ import qualified Codec.Compression.GZip as GZip
 import Control.Monad.Except (throwError)
 import Control.Monad.Extra (findM)
 import qualified Data.Text as T
-import System.FilePath (takeExtension, (<.>), (</>))
-import Text.Blaze.Html (Html, toHtml, (!))
+import System.FilePath ((<.>), (</>), takeExtension)
+import Text.Blaze.Html ((!), Html, toHtml)
 import qualified Text.Blaze.Html5 as Html
 import qualified Text.Blaze.Html5.Attributes as Html (class_)
 import UnliftIO.Directory (doesFileExist)
