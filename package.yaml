@@ -74,6 +74,8 @@ library:
     - shakespeare
     - unliftio
     - unliftio-core
+    - wai
+    - warp
     - xdg-basedir
     - zlib
 
@@ -82,12 +84,7 @@ executables:
     main: Main.hs
     source-dirs: app
     dependencies:
-      - Blammo
       - bluebook
-      - servant-blaze
-      - servant-server
-      - wai
-      - warp
     ghc-options:
       - -threaded
       - -rtsopts
