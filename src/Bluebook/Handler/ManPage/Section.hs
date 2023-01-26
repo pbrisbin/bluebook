@@ -4,6 +4,7 @@
 module Bluebook.Handler.ManPage.Section
     ( SectionAPI
     , handleSection
+    , handleGetSection
     ) where
 
 import Bluebook.Prelude
@@ -28,6 +29,7 @@ handleSection
        , MonadLogger m
        , MonadError ServerError m
        , MonadReader env m
+       , HasAppRoot env
        , HasManPath env
        )
     => Section
@@ -35,12 +37,12 @@ handleSection
 handleSection section = handleGetSection section :<|> handleManPage section
 
 handleGetSection
-    :: (MonadIO m, MonadReader env m, HasManPath env)
+    :: (MonadIO m, MonadReader env m, HasAppRoot env, HasManPath env)
     => Section
     -> Maybe Text
     -> m Html
 handleGetSection section =
-    fmap (defaultLayout title . listingToHtml) . buildListing . maybe
+    defaultLayout title <=< listingToHtml <=< buildListing . maybe
         s
         ((s <>) . QueryByName)
   where

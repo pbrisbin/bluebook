@@ -9,8 +9,11 @@ import Bluebook.Listing
 import Bluebook.Settings
 
 handleGetRoot
-    :: (MonadIO m, MonadReader env m, HasManPath env) => Maybe Text -> m Html
+    :: (MonadIO m, MonadReader env m, HasAppRoot env, HasManPath env)
+    => Maybe Text
+    -> m Html
 handleGetRoot =
-    fmap (defaultLayout "Bluebook" . listingToHtml)
-        . buildListing
+    defaultLayout "Bluebook"
+        <=< listingToHtml
+        <=< buildListing
         . maybe QueryAll QueryByName

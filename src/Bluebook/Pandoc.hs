@@ -62,34 +62,36 @@ reduceHeaderLevels = \case
     Header n attr inner -> Header (min 6 (n + 1)) attr inner
     x -> x
 
-convertManPageRefs :: [Inline] -> [Inline]
-convertManPageRefs = \case
+convertManPageRefs :: Text -> [Inline] -> [Inline]
+convertManPageRefs root = \case
     (Emph [Str x] : Str y : rest)
-        | Right inner <- parse (Emph . pure) $ x <> y -> inner
-        <> convertManPageRefs rest
+        | Right inner <- parse (Emph . pure) $ x <> y
+        -> inner <> convertManPageRefs root rest
 
     (Strong [Str x] : Str y : rest)
-        | Right inner <- parse (Strong . pure) $ x <> y -> inner
-        <> convertManPageRefs rest
+        | Right inner <- parse (Strong . pure) $ x <> y
+        -> inner <> convertManPageRefs root rest
 
     (Str x : Emph [Str y] : rest)
-        | Right inner <- parse (Emph . pure) $ x <> y -> inner
-        <> convertManPageRefs rest
+        | Right inner <- parse (Emph . pure) $ x <> y
+        -> inner <> convertManPageRefs root rest
 
     (Str x : Strong [Str y] : rest)
-        | Right inner <- parse (Strong . pure) $ x <> y -> inner
-        <> convertManPageRefs rest
+        | Right inner <- parse (Strong . pure) $ x <> y
+        -> inner <> convertManPageRefs root rest
 
     (Str x : rest) | Right inner <- parse id x ->
-        inner <> convertManPageRefs rest
+        inner <> convertManPageRefs root rest
 
-    (a : rest) -> a : convertManPageRefs rest
+    (a : rest) -> a : convertManPageRefs root rest
 
     [] -> []
-    where parse f = withPunctuation $ fmap (f . linkManPage) . manPageFromRef
+  where
+    parse f = withPunctuation $ fmap (f . linkManPage root) . manPageFromRef
 
-linkManPage :: ManPage -> Inline
-linkManPage page = link [Str $ manPageToRef page] $ manPageUrlPath page
+linkManPage :: Text -> ManPage -> Inline
+linkManPage root page =
+    link [Str $ manPageToRef page] $ root <> manPageUrlPath page
 
 linkBareUrls :: [Inline] -> [Inline]
 linkBareUrls = concatMap $ \case

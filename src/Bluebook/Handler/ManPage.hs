@@ -3,6 +3,7 @@
 module Bluebook.Handler.ManPage
     ( ManPageAPI
     , handleManPage
+    , handleGetManPage
     , renderMan2Html
     ) where
 
@@ -26,6 +27,7 @@ handleManPage
        , MonadLogger m
        , MonadError ServerError m
        , MonadReader env m
+       , HasAppRoot env
        , HasManPath env
        )
     => Section
@@ -38,6 +40,7 @@ handleGetManPage
        , MonadLogger m
        , MonadError ServerError m
        , MonadReader env m
+       , HasAppRoot env
        , HasManPath env
        )
     => Section
@@ -47,10 +50,17 @@ handleGetManPage section =
     renderMan2Html <=< readManPage <=< fromMaybeNotFound <=< findManPage section
 
 renderMan2Html
-    :: (MonadIO m, MonadLogger m, MonadError ServerError m) => Text -> m Html
+    :: ( MonadIO m
+       , MonadLogger m
+       , MonadError ServerError m
+       , MonadReader env m
+       , HasAppRoot env
+       )
+    => Text
+    -> m Html
 renderMan2Html body = do
     page <-
         fromEitherServerError . first manPageErrorText =<< tryManPage2Html body
 
     let title = "Bluebook - " <> manPageTitle page
-    pure $ defaultLayout title $ manPageBody page
+    defaultLayout title $ manPageBody page

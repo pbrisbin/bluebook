@@ -34,6 +34,9 @@ data App = App
 settingsL :: Lens' App Settings
 settingsL = lens appSettings $ \x y -> x { appSettings = y }
 
+instance HasAppRoot App where
+    appRootL = settingsL . appRootL
+
 instance HasManPath App where
     manPathL = settingsL . manPathL
 

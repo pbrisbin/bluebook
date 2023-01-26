@@ -44,39 +44,45 @@ data ManPageHtml = ManPageHtml
     }
 
 tryManPage2Html
-    :: (MonadIO m, MonadLogger m) => Text -> m (Either ManPageError ManPageHtml)
-tryManPage2Html body = runExceptT $ do
-    (meta, html) <-
-        withExceptT PandocError $ ExceptT $ liftIO $ Pandoc.runIO $ do
-            doc <- Pandoc.readMan Pandoc.def body
-            let Pandoc.Pandoc meta _ = doc
+    :: (MonadIO m, MonadLogger m, MonadReader env m, HasAppRoot env)
+    => Text
+    -> m (Either ManPageError ManPageHtml)
+tryManPage2Html body = do
+    root <- view appRootL
+    runExceptT $ do
+        (meta, html) <-
+            withExceptT PandocError $ ExceptT $ liftIO $ Pandoc.runIO $ do
+                doc <- Pandoc.readMan Pandoc.def body
+                let Pandoc.Pandoc meta _ = doc
 
-            fmap (meta, )
-                . Pandoc.writeHtml5 Pandoc.def
-                . Pandoc.walk Pandoc.addHeaderLinks
-                . Pandoc.walk Pandoc.reduceHeaderLevels
-                . Pandoc.walk Pandoc.convertManPageRefs
-                . Pandoc.walk Pandoc.linkBareUrls
-                $ doc
+                fmap (meta, )
+                    . Pandoc.writeHtml5 Pandoc.def
+                    . Pandoc.walk Pandoc.addHeaderLinks
+                    . Pandoc.walk Pandoc.reduceHeaderLevels
+                    . Pandoc.walk (Pandoc.convertManPageRefs root)
+                    . Pandoc.walk Pandoc.linkBareUrls
+                    $ doc
 
-    date <- textMetaValue <$> requireMeta "date" meta
-    title <- textMetaValue <$> requireMeta "title" meta
-    section <- sectionFromMetaValue =<< requireMeta "section" meta
+        date <- textMetaValue <$> requireMeta "date" meta
+        title <- textMetaValue <$> requireMeta "title" meta
+        section <- sectionFromMetaValue =<< requireMeta "section" meta
 
-    let titleRef = title <> sectionRef section
+        let titleRef = title <> sectionRef section
 
-    logDebug $ "man2html" :# ["input" .= body, "metadata" .= show @Text meta]
+        logDebug
+            $ "man2html"
+            :# ["input" .= body, "metadata" .= show @Text meta]
 
-    pure $ ManPageHtml
-        { manPageTitle = titleRef
-        , manPageBody = do
-            Html.header $ Html.h1 $ Html.toHtml titleRef
-            html
-            Html.ul ! Html.class_ "man-page-footer" $ do
-                Html.li $ toHtml $ sectionName section
-                Html.li $ toHtml date
-                Html.li $ toHtml titleRef
-        }
+        pure $ ManPageHtml
+            { manPageTitle = titleRef
+            , manPageBody = do
+                Html.header $ Html.h1 $ Html.toHtml titleRef
+                html
+                Html.ul ! Html.class_ "man-page-footer" $ do
+                    Html.li $ toHtml $ sectionName section
+                    Html.li $ toHtml date
+                    Html.li $ toHtml titleRef
+            }
 
 requireMeta
     :: MonadError ManPageError m => Text -> Pandoc.Meta -> m Pandoc.MetaValue

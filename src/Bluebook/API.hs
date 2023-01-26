@@ -2,7 +2,7 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Bluebook.API
-    ( runAPI
+    ( run
     ) where
 
 import Bluebook.Prelude
@@ -15,7 +15,7 @@ import Bluebook.Handler.Root
 import Bluebook.ManPage.Section
 import Bluebook.Settings
 import Network.Wai
-import Network.Wai.Handler.Warp (run)
+import qualified Network.Wai.Handler.Warp as Warp
 import Network.Wai.Middleware.Logging
 import Servant
 import Servant.HTML.Blaze
@@ -27,25 +27,25 @@ type API
     :<|> Capture "section" Section :> SectionAPI
     :<|> "ping" :> Get '[HTML] Html
 
-runAPI
-    :: (HasLogger env, HasManPath env)
-    => Int -- ^ Port
-    -> env
-    -> IO ()
-runAPI port app = do
+run :: IO ()
+run = do
+    settings@Settings {..} <- loadSettings
+    app <- loadApp settings
+
     runLoggerLoggingT app
         $ logInfo
         $ "Starting up"
-        :# ["port" .= port, "MANPATH" .= (app ^. manPathL)]
-    run port $ middleware app $ waiApp app
+        :# ["port" .= settingsPort, "MANPATH" .= settingsManPath]
 
-waiApp :: (HasLogger env, HasManPath env) => env -> Application
+    Warp.run settingsPort $ middleware app $ waiApp app
+
+waiApp :: (HasLogger env, HasAppRoot env, HasManPath env) => env -> Application
 waiApp = serve api . server
 
 api :: Proxy API
 api = Proxy
 
-server :: (HasLogger env, HasManPath env) => env -> Server API
+server :: (HasLogger env, HasAppRoot env, HasManPath env) => env -> Server API
 server env = hoistServer api (`runAppT` env) server'
 
 server'
@@ -53,6 +53,7 @@ server'
        , MonadLogger m
        , MonadError ServerError m
        , MonadReader env m
+       , HasAppRoot env
        , HasManPath env
        )
     => ServerT API m

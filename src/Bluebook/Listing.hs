@@ -1,5 +1,6 @@
 module Bluebook.Listing
     ( Listing
+    , listingManPages
     , listingToHtml
     , Query(..)
     , buildListing
@@ -22,14 +23,20 @@ data Listing = Listing
     , listingManPages :: [ManPage]
     }
 
-listingToHtml :: Listing -> Html
+listingToHtml :: (MonadReader env m, HasAppRoot env) => Listing -> m Html
 listingToHtml listing = do
-    header $ h2 $ toHtml $ ("Listing: " <>) $ queryToText $ listingQuery listing
-    section $ ul $ traverse_ listItem $ listingManPages listing
+    root <- view appRootL
+    pure $ do
+        header $ h2 $ toHtml $ ("Listing: " <>) $ queryToText $ listingQuery
+            listing
+        section $ ul $ traverse_ (listItem root) $ listingManPages listing
   where
-    listItem page =
-        li $ a ! href (toValue $ manPageUrlPath page) $ toHtml $ manPageToRef
-            page
+    listItem root page =
+        li
+            $ a
+            ! href (toValue $ root <> manPageUrlPath page)
+            $ toHtml
+            $ manPageToRef page
 
 data Query
     = QueryAll
