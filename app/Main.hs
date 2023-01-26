@@ -36,7 +36,7 @@ main = do
     runLoggerLoggingT app
         $ logInfo
         $ "Starting up"
-        :# ["port" .= settingsPort, "MAN_PATH" .= settingsManPath]
+        :# ["port" .= settingsPort, "MANPATH" .= settingsManPath]
     run settingsPort $ middleware app $ waiApp app
 
 waiApp :: (HasLogger env, HasManPath env) => env -> Application
