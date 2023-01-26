@@ -5,5 +5,8 @@ services:
     build: .
     ports:
       - 3000:3000
+    environment:
+      LOG_COLOR: always
+      LOG_LEVEL: debug
     volumes:
       - ~/.local/share/man:/root/.local/share/man:ro
