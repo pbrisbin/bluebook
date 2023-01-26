@@ -4,6 +4,7 @@ module Bluebook.Html
     -- * Re-exports
     , Html
     , toHtml
+    , (!)
     ) where
 
 import Bluebook.Prelude

@@ -13,6 +13,8 @@ module Bluebook.Convert
 
 import Bluebook.Prelude
 
+import Bluebook.Artifact
+import Bluebook.Html
 import Bluebook.ManPage
 import Bluebook.ManPage.Name
 import Bluebook.ManPage.Section
@@ -23,7 +25,6 @@ import Control.Monad.Except (throwError)
 import Control.Monad.Extra (findM)
 import qualified Data.Text as T
 import System.FilePath (takeExtension, (<.>), (</>))
-import Text.Blaze.Html (Html, toHtml, (!))
 import qualified Text.Blaze.Html5 as Html
 import qualified Text.Blaze.Html5.Attributes as Html (class_)
 import UnliftIO.Directory (doesFileExist)
@@ -38,9 +39,17 @@ manPageErrorText = \case
     PandocError e -> Pandoc.renderError e
 
 data ManPageHtml = ManPageHtml
-    { manPageTitle :: Text
+    { manPage :: ManPage
+    , manPageTitle :: Text
     , manPageBody :: Html
     }
+
+instance ToArtifact ManPageHtml where
+    toArtifact ManPageHtml {..} = Artifact
+        { artifactPath = unpack $ manPageUrlPath manPage
+        , artifactContent = defaultLayout title manPageBody
+        }
+        where title = "Bluebook - " <> manPageTitle
 
 tryManPage2Html
     :: (MonadIO m, MonadLogger m, MonadError ManPageError m)
@@ -72,7 +81,8 @@ tryManPage2Html page body = do
     logDebug $ "man2html" :# ["input" .= body, "metadata" .= show @Text meta]
 
     pure $ ManPageHtml
-        { manPageTitle = title
+        { manPage = page
+        , manPageTitle = title
         , manPageBody = do
             Html.header $ Html.h1 $ Html.toHtml title
             html

@@ -25,6 +25,7 @@ source-repository head
 library
   exposed-modules:
       Bluebook.App
+      Bluebook.Artifact
       Bluebook.CLI
       Bluebook.Convert
       Bluebook.CSS
@@ -73,6 +74,7 @@ library
     , blaze-html
     , envparse
     , errors
+    , exceptions
     , extra
     , filepath
     , http-api-data

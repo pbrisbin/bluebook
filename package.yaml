@@ -60,6 +60,7 @@ library:
     - blaze-html
     - envparse
     - errors
+    - exceptions
     - extra
     - filepath
     - http-api-data

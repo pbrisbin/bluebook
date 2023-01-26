@@ -5,6 +5,8 @@ module Bluebook.App
 
 import Bluebook.Prelude
 
+import Control.Monad.Catch (MonadCatch, MonadThrow)
+
 newtype AppT env m a = AppT
     { unAppT :: ReaderT env (LoggingT m) a
     }
@@ -12,6 +14,9 @@ newtype AppT env m a = AppT
         ( Functor
         , Applicative
         , Monad
+        , MonadThrow
+        , MonadCatch
+        , MonadMask
         , MonadIO
         , MonadUnliftIO
         , MonadLogger
