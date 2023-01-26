@@ -16,13 +16,13 @@ references to other man-pages, and converting any bare URLs to actual HTML
 links.
 
 The files Bluebook creates are meant to be served by a web-server, not browsed
-directly on the file-system. See *EXAMPLES*.
+directly on the file-system. See _EXAMPLES_.
 
 ## OPTIONS
 
-**\-o**, **\--out** *\<PATH\>*
+**\-o**, **\--out** _\<PATH\>_
 
-> Write html files in this directory, default is *./dist*.
+> Write html files in this directory, default is _./dist_.
 
 ## ENVIRONMENT
 
