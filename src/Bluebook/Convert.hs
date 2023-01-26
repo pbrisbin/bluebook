@@ -44,11 +44,11 @@ data ManPageHtml = ManPageHtml
     }
 
 tryManPage2Html
-    :: (MonadIO m, MonadLogger m, MonadReader env m, HasAppRoot env)
+    :: (MonadIO m, MonadLogger m, MonadReader env m, HasRenderLink env)
     => Text
     -> m (Either ManPageError ManPageHtml)
 tryManPage2Html body = do
-    root <- view appRootL
+    rl <- view renderLinkL
     runExceptT $ do
         (meta, html) <-
             withExceptT PandocError $ ExceptT $ liftIO $ Pandoc.runIO $ do
@@ -59,7 +59,7 @@ tryManPage2Html body = do
                     . Pandoc.writeHtml5 Pandoc.def
                     . Pandoc.walk Pandoc.addHeaderLinks
                     . Pandoc.walk Pandoc.reduceHeaderLevels
-                    . Pandoc.walk (Pandoc.convertManPageRefs root)
+                    . Pandoc.walk (Pandoc.convertManPageRefs rl)
                     . Pandoc.walk Pandoc.linkBareUrls
                     $ doc
 

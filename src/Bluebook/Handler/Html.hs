@@ -22,7 +22,7 @@ import qualified Text.Blaze.Html5.Attributes as Html hiding (style, title)
 
 import qualified Bluebook.CSS as CSS
 import Bluebook.ManPage.Section
-import Bluebook.Settings
+import Bluebook.RenderLink
 import Network.HTTP.Types (hContentType)
 import Servant
 import Text.Blaze.Html (Html)
@@ -30,9 +30,11 @@ import qualified Text.Blaze.Html.Renderer.Utf8 as Blaze
 import qualified Text.Blaze.Html5 as Html
 import Text.Blaze.Html5 (docTypeHtml, toHtml, toValue, (!))
 
-defaultLayout :: (MonadReader env m, HasAppRoot env) => Text -> Html -> m Html
+defaultLayout
+    :: (MonadReader env m, HasRenderLink env) => Text -> Html -> m Html
 defaultLayout title body = do
-    root <- view appRootL
+    rl <- view renderLinkL
+
     pure $ docTypeHtml $ do
         Html.head $ do
             Html.meta ! Html.charset "UTF-8"
@@ -41,11 +43,14 @@ defaultLayout title body = do
         Html.body $ do
             Html.nav $ do
                 Html.ul $ do
-                    Html.li $ (Html.a ! Html.href (toValue root)) "Home"
+                    Html.li
+                        $ (Html.a ! Html.href (toValue $ renderLinkToRoot rl))
+                              "Home"
                     for_ [minBound .. maxBound] $ \section -> do
-                        let path = sectionPath section
-                            link = toValue $ root <> "/" <> pack path
-                        Html.li $ (Html.a ! Html.href link) $ toHtml path
+                        let name = sectionPath section
+                            path = "/" <> pack name
+                            link = toValue $ renderLinkToDirectory rl path
+                        Html.li $ (Html.a ! Html.href link) $ toHtml name
 
             body
 
@@ -56,7 +61,7 @@ defaultLayout title body = do
                 " © 2023 Patrick Brisbin"
 
 throwBadRequest
-    :: (MonadError ServerError m, MonadReader env m, HasAppRoot env)
+    :: (MonadError ServerError m, MonadReader env m, HasRenderLink env)
     => Html
     -> m a
 throwBadRequest body = do
@@ -67,7 +72,7 @@ throwBadRequest body = do
         }
 
 throwNotFound
-    :: (MonadError ServerError m, MonadReader env m, HasAppRoot env)
+    :: (MonadError ServerError m, MonadReader env m, HasRenderLink env)
     => Html
     -> m a
 throwNotFound body = do
@@ -78,7 +83,7 @@ throwNotFound body = do
         }
 
 throwServerError
-    :: (MonadError ServerError m, MonadReader env m, HasAppRoot env)
+    :: (MonadError ServerError m, MonadReader env m, HasRenderLink env)
     => Html
     -> m a
 throwServerError body = do
@@ -89,7 +94,7 @@ throwServerError body = do
         }
 
 fromMaybeNotFound
-    :: (MonadError ServerError m, MonadReader env m, HasAppRoot env)
+    :: (MonadError ServerError m, MonadReader env m, HasRenderLink env)
     => Maybe a
     -> m a
 fromMaybeNotFound = flip maybe pure $ throwNotFound $ do
@@ -97,7 +102,7 @@ fromMaybeNotFound = flip maybe pure $ throwNotFound $ do
     Html.p "This page does not exist."
 
 fromEitherBadRequest
-    :: (MonadError ServerError m, MonadReader env m, HasAppRoot env)
+    :: (MonadError ServerError m, MonadReader env m, HasRenderLink env)
     => (e -> Text)
     -> Either e a
     -> m a
@@ -110,7 +115,7 @@ fromEitherServerError
     :: ( MonadLogger m
        , MonadError ServerError m
        , MonadReader env m
-       , HasAppRoot env
+       , HasRenderLink env
        )
     => Either Text a
     -> m a

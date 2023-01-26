@@ -3,7 +3,7 @@ module Bluebook.Settings
     , loadSettings
 
     -- * Access
-    , HasAppRoot(..)
+    , HasRenderLink(..)
     , HasManPath(..)
 
     -- * Utilities
@@ -13,12 +13,13 @@ module Bluebook.Settings
 import Bluebook.Prelude
 
 import qualified Blammo.Logging.LogSettings.Env as LoggingEnv
+import Bluebook.RenderLink
 import qualified Env
 import qualified System.Environment.XDG.BaseDir as XDG
 
 data Settings = Settings
     { settingsPort :: Int
-    , settingsAppRoot :: Text
+    , settingsAppRoot :: Maybe Text
     , settingsLogSettings :: LogSettings
     , settingsManPath :: [FilePath]
     }
@@ -31,7 +32,7 @@ loadSettings = do
         $ Env.parse (Env.header "Build and serve local man-pages as HTML")
         $ Settings
         <$> Env.var Env.auto "PORT" (Env.def 3000)
-        <*> Env.var Env.str "APPROOT" (Env.def "")
+        <*> optional (Env.var (Env.str <=< Env.nonempty) "APPROOT" mempty)
         <*> LoggingEnv.parser
         <*> Env.var
                 (Env.splitOn ':' <=< Env.nonempty)
@@ -42,15 +43,6 @@ getDefaultManPath :: MonadIO m => m [FilePath]
 getDefaultManPath = liftIO $ do
     manDataDir <- XDG.getUserDataDir "man"
     pure [manDataDir, "/usr/local/share/man", "/usr/share/man"]
-
-class HasAppRoot env where
-    appRootL :: Lens' env Text
-
-instance HasAppRoot Text where
-    appRootL = id
-
-instance HasAppRoot Settings where
-    appRootL = lens settingsAppRoot $ \x y -> x { settingsAppRoot = y }
 
 class HasManPath env where
     manPathL :: Lens' env [FilePath]

@@ -9,7 +9,7 @@ import Bluebook.Listing
 import Bluebook.Settings
 
 handleGetRoot
-    :: (MonadIO m, MonadReader env m, HasAppRoot env, HasManPath env)
+    :: (MonadIO m, MonadReader env m, HasRenderLink env, HasManPath env)
     => Maybe Text
     -> m Html
 handleGetRoot =

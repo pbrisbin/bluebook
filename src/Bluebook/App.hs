@@ -7,6 +7,7 @@ module Bluebook.App
 
 import Bluebook.Prelude
 
+import Bluebook.RenderLink
 import Bluebook.Settings
 
 newtype AppT env m a = AppT
@@ -29,13 +30,11 @@ runAppT f app = runLoggerLoggingT app $ runReaderT (unAppT f) app
 data App = App
     { appSettings :: Settings
     , appLogger :: Logger
+    , appRenderLink :: RenderLink
     }
 
 settingsL :: Lens' App Settings
 settingsL = lens appSettings $ \x y -> x { appSettings = y }
-
-instance HasAppRoot App where
-    appRootL = settingsL . appRootL
 
 instance HasManPath App where
     manPathL = settingsL . manPathL
@@ -43,5 +42,10 @@ instance HasManPath App where
 instance HasLogger App where
     loggerL = lens appLogger $ \x y -> x { appLogger = y }
 
+instance HasRenderLink App where
+    renderLinkL = lens appRenderLink $ \x y -> x { appRenderLink = y }
+
 loadApp :: MonadIO m => Settings -> m App
-loadApp settings = App settings <$> newLogger (settingsLogSettings settings)
+loadApp settings = do
+    let rl = makeRenderLinkWeb $ settingsAppRoot settings
+    App settings <$> newLogger (settingsLogSettings settings) <*> pure rl

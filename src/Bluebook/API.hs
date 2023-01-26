@@ -39,13 +39,15 @@ run = do
 
     Warp.run settingsPort $ middleware app $ waiApp app
 
-waiApp :: (HasLogger env, HasAppRoot env, HasManPath env) => env -> Application
+waiApp
+    :: (HasLogger env, HasRenderLink env, HasManPath env) => env -> Application
 waiApp = serve api . server
 
 api :: Proxy API
 api = Proxy
 
-server :: (HasLogger env, HasAppRoot env, HasManPath env) => env -> Server API
+server
+    :: (HasLogger env, HasRenderLink env, HasManPath env) => env -> Server API
 server env = hoistServer api (`runAppT` env) server'
 
 server'
@@ -53,7 +55,7 @@ server'
        , MonadLogger m
        , MonadError ServerError m
        , MonadReader env m
-       , HasAppRoot env
+       , HasRenderLink env
        , HasManPath env
        )
     => ServerT API m

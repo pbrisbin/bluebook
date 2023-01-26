@@ -34,4 +34,4 @@ RUN \
   rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /root/.local/bin/bluebook /bin/bluebook
-CMD ["/bin/bluebook"]
+CMD ["/bin/bluebook", "serve"]

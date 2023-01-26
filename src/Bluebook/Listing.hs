@@ -10,6 +10,7 @@ import Bluebook.Prelude
 
 import Bluebook.ManPage
 import Bluebook.ManPage.Section
+import Bluebook.RenderLink
 import Bluebook.Settings
 import qualified Data.Text as T
 import System.FilePath ((</>))
@@ -23,18 +24,18 @@ data Listing = Listing
     , listingManPages :: [ManPage]
     }
 
-listingToHtml :: (MonadReader env m, HasAppRoot env) => Listing -> m Html
+listingToHtml :: (MonadReader env m, HasRenderLink env) => Listing -> m Html
 listingToHtml listing = do
-    root <- view appRootL
+    rl <- view renderLinkL
     pure $ do
         header $ h2 $ toHtml $ ("Listing: " <>) $ queryToText $ listingQuery
             listing
-        section $ ul $ traverse_ (listItem root) $ listingManPages listing
+        section $ ul $ traverse_ (listItem rl) $ listingManPages listing
   where
-    listItem root page =
+    listItem rl page =
         li
             $ a
-            ! href (toValue $ root <> manPageUrlPath page)
+            ! href (toValue $ renderLinkToFile rl $ manPageUrlPath page)
             $ toHtml
             $ manPageToRef page
 

@@ -41,6 +41,7 @@ library
       Bluebook.Orphans
       Bluebook.Pandoc
       Bluebook.Prelude
+      Bluebook.RenderLink
       Bluebook.Settings
   other-modules:
       Paths_bluebook

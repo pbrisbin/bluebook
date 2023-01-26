@@ -9,6 +9,7 @@ module Bluebook.Pandoc
 import Bluebook.Prelude
 
 import Bluebook.ManPage
+import Bluebook.RenderLink
 import qualified Data.Text as T
 import Text.Pandoc.Class as X
 import Text.Pandoc.Definition as X
@@ -62,36 +63,36 @@ reduceHeaderLevels = \case
     Header n attr inner -> Header (min 6 (n + 1)) attr inner
     x -> x
 
-convertManPageRefs :: Text -> [Inline] -> [Inline]
-convertManPageRefs root = \case
+convertManPageRefs :: RenderLink -> [Inline] -> [Inline]
+convertManPageRefs rl = \case
     (Emph [Str x] : Str y : rest)
         | Right inner <- parse (Emph . pure) $ x <> y
-        -> inner <> convertManPageRefs root rest
+        -> inner <> convertManPageRefs rl rest
 
     (Strong [Str x] : Str y : rest)
         | Right inner <- parse (Strong . pure) $ x <> y
-        -> inner <> convertManPageRefs root rest
+        -> inner <> convertManPageRefs rl rest
 
     (Str x : Emph [Str y] : rest)
         | Right inner <- parse (Emph . pure) $ x <> y
-        -> inner <> convertManPageRefs root rest
+        -> inner <> convertManPageRefs rl rest
 
     (Str x : Strong [Str y] : rest)
         | Right inner <- parse (Strong . pure) $ x <> y
-        -> inner <> convertManPageRefs root rest
+        -> inner <> convertManPageRefs rl rest
 
     (Str x : rest) | Right inner <- parse id x ->
-        inner <> convertManPageRefs root rest
+        inner <> convertManPageRefs rl rest
 
-    (a : rest) -> a : convertManPageRefs root rest
+    (a : rest) -> a : convertManPageRefs rl rest
 
     [] -> []
   where
-    parse f = withPunctuation $ fmap (f . linkManPage root) . manPageFromRef
+    parse f = withPunctuation $ fmap (f . linkManPage rl) . manPageFromRef
 
-linkManPage :: Text -> ManPage -> Inline
-linkManPage root page =
-    link [Str $ manPageToRef page] $ root <> manPageUrlPath page
+linkManPage :: RenderLink -> ManPage -> Inline
+linkManPage rl page =
+    link [Str $ manPageToRef page] $ renderLinkToFile rl $ manPageUrlPath page
 
 linkBareUrls :: [Inline] -> [Inline]
 linkBareUrls = concatMap $ \case

@@ -27,7 +27,7 @@ handleManPage
        , MonadLogger m
        , MonadError ServerError m
        , MonadReader env m
-       , HasAppRoot env
+       , HasRenderLink env
        , HasManPath env
        )
     => Section
@@ -40,7 +40,7 @@ handleGetManPage
        , MonadLogger m
        , MonadError ServerError m
        , MonadReader env m
-       , HasAppRoot env
+       , HasRenderLink env
        , HasManPath env
        )
     => Section
@@ -54,7 +54,7 @@ renderMan2Html
        , MonadLogger m
        , MonadError ServerError m
        , MonadReader env m
-       , HasAppRoot env
+       , HasRenderLink env
        )
     => Text
     -> m Html

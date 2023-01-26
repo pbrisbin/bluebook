@@ -29,7 +29,7 @@ handleSection
        , MonadLogger m
        , MonadError ServerError m
        , MonadReader env m
-       , HasAppRoot env
+       , HasRenderLink env
        , HasManPath env
        )
     => Section
@@ -37,7 +37,7 @@ handleSection
 handleSection section = handleGetSection section :<|> handleManPage section
 
 handleGetSection
-    :: (MonadIO m, MonadReader env m, HasAppRoot env, HasManPath env)
+    :: (MonadIO m, MonadReader env m, HasRenderLink env, HasManPath env)
     => Section
     -> Maybe Text
     -> m Html
