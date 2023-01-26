@@ -20,15 +20,15 @@ directly on the file-system. See *EXAMPLES*.
 
 ## OPTIONS
 
-**\-o**, **\--out** *\<PATH\>*\
+**\-o**, **\--out** *\<PATH\>*
 
 > Write html files in this directory, default is *./dist*.
 
 ## ENVIRONMENT
 
-**MANPATH**\
+**MANPATH**
 
-> *:*-separated list of directories to search for man-pages. Default is,
+> `:`-separated list of directories to search for man-pages. Default is,
 >
 > ```
 > ${XDG_DATA_DIR:-$HOME/.local/share}/man:/usr/local/share/man:/usr/share/man
@@ -60,16 +60,25 @@ If you know of such a tool, do let me know!
 
 ## EXAMPLES
 
+Convert all your system's man-pages into the `./dist` directory,
+
 ```
-# Or simply `docker compose up -d' in this repository
+bluebook
+```
+
+Serve them,
+
+```
 docker run \
   --detach \
   --publish 8080:80 \
   --volume "$PWD"/dist:/usr/share/nginx/html:ro \
   nginx
+```
 
-bluebook
+And browse them,
 
+```
 $BROWSER http://localhost:8080
 ```
 
