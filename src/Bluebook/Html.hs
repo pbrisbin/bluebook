@@ -13,7 +13,7 @@ import qualified Bluebook.CSS as CSS
 import Bluebook.ManPage.Section
 import Text.Blaze.Html (Html)
 import qualified Text.Blaze.Html5 as Html
-import Text.Blaze.Html5 ((!), docTypeHtml, toHtml, toValue)
+import Text.Blaze.Html5 (docTypeHtml, toHtml, toValue, (!))
 
 defaultLayout :: Text -> Html -> Html
 defaultLayout title body = docTypeHtml $ do
