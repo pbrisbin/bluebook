@@ -1,7 +1,7 @@
 module Bluebook.ManPage
     ( ManPage
-    , manPageName
     , manPageSection
+    , manPageName
     , manPageFromFile
     , manPageFromRef
     , manPageToRef
@@ -21,11 +21,11 @@ data ManPage = ManPage
     }
     deriving stock (Eq, Ord, Show)
 
-manPageName :: ManPage -> Text
-manPageName = getName . name
-
 manPageSection :: ManPage -> Section
 manPageSection = section
+
+manPageName :: ManPage -> Name
+manPageName = name
 
 -- @.../foo.1(.gz)@ -> @{ name:foo, section:1 }@
 manPageFromFile :: FilePath -> Either String ManPage
@@ -44,10 +44,11 @@ manPageFromRef t = do
 manPageToRef :: ManPage -> Text
 manPageToRef ManPage {..} = getName name <> sectionRef section
 
--- @{ name:foo, section:1 }@ -> @/man1/foo.1@
+-- @{ name:foo, section:1 }@ -> @man1/foo.1.html@
 manPageUrlPath :: ManPage -> Text
-manPageUrlPath ManPage {..} = mconcat
-    [ "/" <> pack (sectionPath section)
-    , "/" <> getName name
-    , pack $ sectionSuffix section
-    ]
+manPageUrlPath ManPage {..} =
+    pack (sectionPath section)
+        <> "/"
+        <> getName name
+        <> pack (sectionSuffix section)
+        <> ".html"
