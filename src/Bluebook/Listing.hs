@@ -16,7 +16,7 @@ import Bluebook.ManPath
 import qualified Data.Text as T
 import System.FilePath ((</>))
 import Text.Blaze.Html5
-    ((!), Html, a, h2, header, li, section, toHtml, toValue, ul)
+    (Html, a, h2, header, li, section, toHtml, toValue, ul, (!))
 import Text.Blaze.Html5.Attributes (href)
 import UnliftIO.Directory (doesDirectoryExist, listDirectory)
 

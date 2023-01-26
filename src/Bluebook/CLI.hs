@@ -15,7 +15,7 @@ import Bluebook.ManPage
 import Bluebook.ManPage.Section
 import Bluebook.ManPath
 import Options.Applicative
-import System.FilePath ((<.>), (</>), takeDirectory)
+import System.FilePath (takeDirectory, (<.>), (</>))
 import qualified Text.Blaze.Html.Renderer.Utf8 as Blaze
 import UnliftIO.Directory (createDirectoryIfMissing, doesFileExist)
 
