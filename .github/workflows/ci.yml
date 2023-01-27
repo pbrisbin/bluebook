@@ -20,7 +20,7 @@ jobs:
           ghc-version: ${{ steps.stack.outputs.compiler-version }}
       - uses: actions/upload-artifact@v3
         with:
-          name: bluebook
+          name: stack-bin
           path: |
             ${{ steps.stack.outputs.local-bin }}/bluebook
 
@@ -57,8 +57,8 @@ jobs:
     steps:
       - uses: actions/download-artifact@v3
         with:
-          name: bluebook
-          path: bluebook
+          name: stack-bin
+          path: stack-bin
 
       - id: create-release
         uses: actions/create-release@v1
@@ -73,7 +73,7 @@ jobs:
       - uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
-          asset_path: bluebook
+          asset_path: stack-bin/bluebook
           asset_name: bluebook-linux-x64
           asset_content_type: application/octet-stream
         env:
