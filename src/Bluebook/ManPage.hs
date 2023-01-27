@@ -1,5 +1,6 @@
 module Bluebook.ManPage
     ( ManPage
+    , newManPage
     , manPageSection
     , manPageName
     , manPageFromFile
@@ -20,6 +21,9 @@ data ManPage = ManPage
     , name :: Name
     }
     deriving stock (Eq, Ord, Show)
+
+newManPage :: Section -> Name -> ManPage
+newManPage = ManPage
 
 manPageSection :: ManPage -> Section
 manPageSection = section

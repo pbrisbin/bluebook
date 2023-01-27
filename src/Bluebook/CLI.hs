@@ -1,3 +1,5 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module Bluebook.CLI
     ( Options
     , optionsParser
@@ -10,11 +12,14 @@ import Blammo.Logging.Simple
 import Bluebook.App (runAppT)
 import Bluebook.Artifact
 import Bluebook.Convert
+import qualified Bluebook.CSS as CSS
 import Bluebook.Html
 import Bluebook.Listing
 import Bluebook.ManPage
+import Bluebook.ManPage.Name
 import Bluebook.ManPage.Section
 import Bluebook.ManPath
+import Data.FileEmbed
 import Options.Applicative
 import System.FilePath ((<.>), (</>))
 
@@ -57,13 +62,37 @@ run options = do
     app <- loadApp options
 
     flip runAppT app $ do
-        pages <- filterM writeManPage =<< buildListing
+        CSS.write
+
+        mPage <- writeBluebook
+        pages <-
+            fmap (maybe id (:) mPage) $ filterM writeManPage =<< buildListing
 
         writeArtifact $ RootHtml pages
 
         traverse_
             (writeArtifact . flip toSectionHtml pages)
             [minBound .. maxBound]
+
+writeBluebook
+    :: ( MonadMask m
+       , MonadIO m
+       , MonadLogger m
+       , MonadReader env m
+       , HasArtifacts env
+       )
+    => m (Maybe ManPage)
+writeBluebook = withThreadContext ["page" .= manPageToRef page] $ do
+    result <- runExceptT $ do
+        mp <- tryMarkdown2ManPage readmeMarkdown
+        tryManPage2Html page mp
+    case result of
+        Left err -> Nothing <$ logError (manPageErrorText err :# [])
+        Right html -> Just page <$ writeArtifact html
+    where page = newManPage Section1 $ mkNameUnsafe "bluebook"
+
+readmeMarkdown :: ByteString
+readmeMarkdown = $(embedFile "README.md")
 
 writeManPage
     :: ( MonadMask m

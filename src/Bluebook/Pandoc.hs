@@ -16,8 +16,10 @@ import Text.Pandoc.Error as X
 import Text.Pandoc.Logging as X
 import Text.Pandoc.Options as X
 import Text.Pandoc.Readers.Man as X
+import Text.Pandoc.Readers.Markdown as X
 import Text.Pandoc.Walk as X
 import Text.Pandoc.Writers.HTML as X
+import Text.Pandoc.Writers.Man as X
 
 addHeaderLinks :: Block -> Block
 addHeaderLinks = linkIdentifiers . addIdentifiers

@@ -7,6 +7,7 @@ module Bluebook.Convert
     , manPageTitle
     , manPageBody
     , tryManPage2Html
+    , tryMarkdown2ManPage
     , findManPage
     , readManPage
     ) where
@@ -84,16 +85,32 @@ tryManPage2Html page body = do
         { manPage = page
         , manPageTitle = title
         , manPageBody = do
-            Html.header $ Html.h1 $ Html.toHtml title
-            html
-            Html.ul ! Html.class_ "man-page-footer" $ do
-                Html.li $ toHtml $ sectionName section
-                Html.li $ toHtml $ fromMaybe "-" mDate
-                Html.li $ toHtml title
+            Html.section ! Html.class_ "man-page" $ do
+                Html.header $ Html.h1 $ Html.toHtml title
+                html
+                Html.footer $ do
+                    Html.ul $ do
+                        Html.li $ toHtml $ sectionName section
+                        Html.li $ toHtml $ fromMaybe "-" mDate
+                        Html.li $ toHtml title
         }
   where
     section = manPageSection page
     defTitle = T.toUpper $ manPageToRef page
+
+tryMarkdown2ManPage
+    :: (MonadIO m, MonadError ManPageError m) => ByteString -> m Text
+tryMarkdown2ManPage md = do
+    result <- liftIO $ Pandoc.runIO $ do
+        Pandoc.setVerbosity Pandoc.ERROR
+        doc <- Pandoc.readMarkdown readOptions $ decodeUtf8 @Text md
+        Pandoc.writeMan Pandoc.def doc
+    either (throwError . PandocError) pure result
+  where
+    readOptions = Pandoc.def
+        { Pandoc.readerStandalone = True
+        , Pandoc.readerExtensions = Pandoc.githubMarkdownExtensions
+        }
 
 -- | We only work with 'MetaInlines' because we know that's all we need
 textMetaValue :: Pandoc.MetaValue -> Text

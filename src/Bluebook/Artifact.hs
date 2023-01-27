@@ -3,6 +3,7 @@ module Bluebook.Artifact
     , Artifact(..)
     , ToArtifact(..)
     , writeArtifact
+    , writeArtifactRaw
     ) where
 
 import Bluebook.Prelude
@@ -35,13 +36,21 @@ writeArtifact
        )
     => a
     -> m ()
-writeArtifact a = do
-    absPath <- (</> artifactPath) <$> view artifactsL
+writeArtifact a = writeArtifactRaw artifactPath
+    $ Blaze.renderHtml artifactContent
+    where Artifact {..} = toArtifact a
+
+writeArtifactRaw
+    :: (MonadIO m, MonadLogger m, MonadReader env m, HasArtifacts env)
+    => FilePath
+    -> LByteString
+    -> m ()
+writeArtifactRaw path content = do
+    absPath <- (</> path) <$> view artifactsL
     exists <- doesFileExist absPath
     if exists
         then logDebug $ "Exists" :# ["path" .= absPath]
         else do
             logInfo $ "Write" :# ["path" .= absPath]
             createDirectoryIfMissing True $ takeDirectory absPath
-            writeFileLBS absPath $ Blaze.renderHtml artifactContent
-    where Artifact {..} = toArtifact a
+            writeFileLBS absPath content

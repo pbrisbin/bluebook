@@ -1,5 +1,5 @@
 module Bluebook.ManPage.Section
-    ( Section
+    ( Section(..)
     , sectionFromRef
     , sectionFromSuffix
     , sectionFromPath

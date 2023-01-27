@@ -1,6 +1,7 @@
 module Bluebook.ManPage.Name
     ( Name
     , mkName
+    , mkNameUnsafe
     , getName
     ) where
 
@@ -23,6 +24,9 @@ mkName n
     | T.null n = Left "Name cannot be empty"
     | T.any isSpace n = Left "Name cannot contain whitespace"
     | otherwise = Right $ Name n
+
+mkNameUnsafe :: Text -> Name
+mkNameUnsafe = Name
 
 getName :: Name -> Text
 getName = unName

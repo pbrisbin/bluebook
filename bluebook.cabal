@@ -76,6 +76,7 @@ library
     , errors
     , exceptions
     , extra
+    , file-embed
     , filepath
     , http-api-data
     , microlens-platform
@@ -84,7 +85,6 @@ library
     , pandoc
     , pandoc-types
     , relude
-    , shakespeare
     , unliftio
     , unliftio-core
     , xdg-basedir

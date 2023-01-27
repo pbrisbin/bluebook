@@ -1,5 +1,3 @@
-# BLUEBOOK(1)
-
 ## NAME
 
 bluebook - nicely render man-pages to html, with cross-linking
@@ -20,27 +18,23 @@ directly on the file-system. See _EXAMPLES_.
 
 ## OPTIONS
 
-**\-o**, **\--out** _\<PATH\>_
+**\-o**, **\--out** _<PATH\>_
 
-> Write html files in this directory, default is _./dist_.
+Write html files in this directory, default is _./dist_.
 
 ## ENVIRONMENT
 
 **MANPATH**
 
-> `:`-separated list of directories to search for man-pages. Default is,
->
-> ```
-> ${XDG_DATA_DIR:-$HOME/.local/share}/man:/usr/local/share/man:/usr/share/man
-> ```
+`:`-separated list of directories to search for man-pages. Default is,
+
+```
+${XDG_DATA_DIR:-$HOME/.local/share}/man:/usr/local/share/man:/usr/share/man
+```
 
 ## NOTES
 
-You may wonder,
-
-**Why not use [die.net](https://linux.die.net/man/), or
-[kernel.org](https://www.kernel.org/doc/man-pages/),
-[man7](https://man7.org/linux/man-pages/index.html)?**
+**Why not use die.net, kernel.org, or man7.org?**
 
 At work, we write a handful of CLI tools that are thoroughly documented through
 man-pages that get installed with the tool. It is super useful to have these
@@ -60,28 +54,11 @@ If you know of such a tool, do let me know!
 
 ## EXAMPLES
 
-Convert all your system's man-pages into the `./dist` directory,
+Convert all your system's man-pages into the `./dist` directory, serve them, and
+browse them:
 
 ```
 bluebook
-```
-
-Serve them,
-
-```
-docker run \
-  --detach \
-  --publish 8080:80 \
-  --volume "$PWD"/dist:/usr/share/nginx/html:ro \
-  nginx
-```
-
-And browse them,
-
-```
+docker run -d -p 8080:80 -v "$PWD"/dist:/usr/share/nginx/html:ro nginx
 $BROWSER http://localhost:8080
 ```
-
----
-
-[LICENSE](./LICENSE) | [CHANGELOG](./CHANGELOG.md)
