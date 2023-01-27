@@ -22,6 +22,7 @@ import Bluebook.ManPath
 import Data.FileEmbed
 import Options.Applicative
 import System.FilePath ((<.>), (</>))
+import qualified Text.Blaze.Html5 as Html
 
 newtype Options = Options
     { oOut :: FilePath
@@ -68,6 +69,7 @@ run options = do
         pages <-
             fmap (maybe id (:) mPage) $ filterM writeManPage =<< buildListing
 
+        writeArtifact NotFoundHtml
         writeArtifact $ RootHtml pages
 
         traverse_
@@ -121,6 +123,14 @@ instance ToArtifact RootHtml where
         { artifactPath = "index" <.> "html"
         , artifactContent = defaultLayout "Bluebook"
             $ listingToHtml "All man-pages" rootPages
+        }
+
+data NotFoundHtml = NotFoundHtml
+
+instance ToArtifact NotFoundHtml where
+    toArtifact NotFoundHtml = Artifact
+        { artifactPath = "404" <.> "html"
+        , artifactContent = defaultLayout "Bluebook" $ Html.p "Page not found"
         }
 
 data SectionHtml = SectionHtml
