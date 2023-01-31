@@ -1,146 +1,143 @@
-{-# LANGUAGE TupleSections #-}
-
 module Bluebook.Convert
-    ( ManPageError
-    , manPageErrorText
-    , ManPageHtml
-    , manPageTitle
-    , manPageBody
-    , tryManPage2Html
-    , tryMarkdown2ManPage
-    , findManPage
-    , readManPage
+    ( manPage2Html
+
+    -- * Exported for testing
+    , addHeaderLinks
+    , reduceHeaderLevels
+    , convertManPageRefs
+    , linkBareUrls
     ) where
 
 import Bluebook.Prelude
 
-import Bluebook.Artifact
-import Bluebook.Html
-import Bluebook.ManPage
-import Bluebook.ManPage.Name
-import Bluebook.ManPage.Section
-import Bluebook.ManPath
-import qualified Bluebook.Pandoc as Pandoc
-import qualified Codec.Compression.GZip as GZip
-import Control.Monad.Except (throwError)
-import Control.Monad.Extra (findM)
+import Bluebook.Error
+import Bluebook.Manifest (Manifest)
+import qualified Bluebook.Manifest as Manifest
+import Bluebook.ManPage (ManPage)
+import qualified Bluebook.ManPage as ManPage
 import qualified Data.Text as T
-import System.FilePath (takeExtension, (<.>), (</>))
-import qualified Text.Blaze.Html5 as Html
-import qualified Text.Blaze.Html5.Attributes as Html (class_)
-import UnliftIO.Directory (doesFileExist)
+import Text.Blaze.Html (Html)
+import Text.Pandoc.Definition as Pandoc
+import Text.Pandoc.Options as Pandoc
+import Text.Pandoc.Readers.Man as Pandoc
+import Text.Pandoc.Walk as Pandoc
+import Text.Pandoc.Writers.HTML as Pandoc
 
-data ManPageError
-    = ManPageNotFound
-    | PandocError Pandoc.PandocError
+manPage2Html :: MonadIO m => Manifest -> Text -> m Html
+manPage2Html m body = runPandoc $ do
+    doc <- Pandoc.readMan Pandoc.def body
+    Pandoc.writeHtml5 Pandoc.def
+        $ Pandoc.walk addHeaderLinks
+        $ Pandoc.walk reduceHeaderLevels
+        $ Pandoc.walk (convertManPageRefs m)
+        $ Pandoc.walk linkBareUrls doc
 
-manPageErrorText :: ManPageError -> Text
-manPageErrorText = \case
-    ManPageNotFound -> "Not found"
-    PandocError e -> Pandoc.renderError e
+addHeaderLinks :: Block -> Block
+addHeaderLinks = linkIdentifiers . addIdentifiers
 
-data ManPageHtml = ManPageHtml
-    { manPage :: ManPage
-    , manPageTitle :: Text
-    , manPageBody :: Html
-    }
+linkIdentifiers :: Block -> Block
+linkIdentifiers = \case
+    (Header n attr inner) | Just identifier <- getIdentifier attr ->
+        Header n attr [link inner $ "#" <> identifier]
+    x -> x
 
-instance ToArtifact ManPageHtml where
-    toArtifact ManPageHtml {..} = Artifact
-        { artifactPath = unpack $ manPageUrlPath manPage
-        , artifactContent = defaultLayout title manPageBody
-        }
-        where title = "Bluebook - " <> manPageTitle
+addIdentifiers :: Block -> Block
+addIdentifiers = \case
+    (Header n attr inner) | Just attr' <- addIdentifier inner attr ->
+        Header n attr' inner
+    x -> x
 
-tryManPage2Html
-    :: (MonadIO m, MonadLogger m, MonadError ManPageError m)
-    => ManPage
+getIdentifier :: Attr -> Maybe Text
+getIdentifier = \case
+    ("", _, _) -> Nothing
+    (x, _, _) -> Just x
+
+addIdentifier :: [Inline] -> Attr -> Maybe Attr
+addIdentifier inner = \case
+    ("", classes, kvs) -> Just (toIdentifier inner, classes, kvs)
+    _ -> Nothing
+
+toIdentifier :: [Inline] -> Text
+toIdentifier =
+    T.filter (`elem` (['-'] <> ['a' .. 'z'] <> ['0' .. '9']))
+        . T.toLower
+        . T.replace " " "-"
+        . T.unwords
+        . concatMap inlineText
+
+inlineText :: Inline -> [Text]
+inlineText = \case
+    Str t -> [t]
+    Code _ t -> [t]
+    _ -> []
+
+reduceHeaderLevels :: Block -> Block
+reduceHeaderLevels = \case
+    Header n attr inner -> Header (min 6 (n + 1)) attr inner
+    x -> x
+
+convertManPageRefs :: Manifest -> [Inline] -> [Inline]
+convertManPageRefs m = \case
+    (Emph [Str x] : Str y : rest)
+        | Right inner <- parse (Emph . pure) $ x <> y
+        -> inner <> convertManPageRefs m rest
+
+    (Strong [Str x] : Str y : rest)
+        | Right inner <- parse (Strong . pure) $ x <> y
+        -> inner <> convertManPageRefs m rest
+
+    (Str x : Emph [Str y] : rest)
+        | Right inner <- parse (Emph . pure) $ x <> y
+        -> inner <> convertManPageRefs m rest
+
+    (Str x : Strong [Str y] : rest)
+        | Right inner <- parse (Strong . pure) $ x <> y
+        -> inner <> convertManPageRefs m rest
+
+    (Str x : rest) | Right inner <- parse id x ->
+        inner <> convertManPageRefs m rest
+
+    (a : rest) -> a : convertManPageRefs m rest
+
+    [] -> []
+    where parse f = withPunctuation $ fmap (f . linkManPage) . manPageFromRef m
+
+manPageFromRef :: Manifest -> Text -> Either String ManPage
+manPageFromRef m =
+    note "Referenced man-page does not exist" . (`Manifest.lookupRef` m)
+
+linkManPage :: ManPage -> Inline
+linkManPage page = link [Str $ ManPage.ref page] $ ManPage.url page
+
+linkBareUrls :: [Inline] -> [Inline]
+linkBareUrls = concatMap $ \case
+    Str x -> concatMap renderIfLink $ T.words x
+    x -> [x]
+  where
+    renderIfLink x = fromMaybe [Str x] $ hush $ withPunctuation tryLink x
+
+    tryLink :: Text -> Either String Inline
+    tryLink t
+        | Just t' <- T.stripPrefix "<" =<< T.stripSuffix ">" t = tryLink t'
+        | Just t' <- T.stripPrefix "(" =<< T.stripSuffix ")" t = tryLink t'
+        | Just t' <- T.stripPrefix "[" =<< T.stripSuffix "]" t = tryLink t'
+        | "http://" `T.isInfixOf` t = Right $ link [Str t] t
+        | "https://" `T.isInfixOf` t = Right $ link [Str t] t
+        | otherwise = Left "Not a link"
+
+withPunctuation
+    :: (Text -> Either String Inline)
+    -- ^ Function to apply to de-punctuated text
     -> Text
-    -> m ManPageHtml
-tryManPage2Html page body = do
-    (meta, html) <- do
-        result <- liftIO $ Pandoc.runIO $ do
-            Pandoc.setVerbosity Pandoc.ERROR
-
-            doc <- Pandoc.readMan Pandoc.def body
-            let Pandoc.Pandoc meta _ = doc
-
-            fmap (meta, )
-                . Pandoc.writeHtml5 Pandoc.def
-                . Pandoc.walk Pandoc.addHeaderLinks
-                . Pandoc.walk Pandoc.reduceHeaderLevels
-                . Pandoc.walk Pandoc.convertManPageRefs
-                . Pandoc.walk Pandoc.linkBareUrls
-                $ doc
-
-        either (throwError . PandocError) pure result
-
-    let mDate = textMetaValue <$> Pandoc.lookupMeta "date" meta
-        mTitle = textMetaValue <$> Pandoc.lookupMeta "title" meta
-        title = maybe defTitle (<> sectionRef section) mTitle
-
-    logDebug $ "man2html" :# ["input" .= body, "metadata" .= show @Text meta]
-
-    pure $ ManPageHtml
-        { manPage = page
-        , manPageTitle = title
-        , manPageBody = do
-            Html.section ! Html.class_ "man-page" $ do
-                Html.header $ Html.h1 $ Html.toHtml title
-                html
-                Html.footer $ do
-                    Html.ul $ do
-                        Html.li $ toHtml $ sectionName section
-                        Html.li $ toHtml $ fromMaybe "-" mDate
-                        Html.li $ toHtml title
-        }
+    -- ^ Text that may have puncuation
+    -> Either String [Inline]
+    -- ^ Result with trailing punctuation re-added if necessary
+withPunctuation f x = do
+    (t, c) <- note "No last character" $ T.unsnoc x
+    if c `elem` puncuation then (: [Str $ pack [c]]) <$> f t else pure <$> f x
   where
-    section = manPageSection page
-    defTitle = T.toUpper $ manPageToRef page
+    puncuation :: String
+    puncuation = ".,:;"
 
-tryMarkdown2ManPage
-    :: (MonadIO m, MonadError ManPageError m) => ByteString -> m Text
-tryMarkdown2ManPage md = do
-    result <- liftIO $ Pandoc.runIO $ do
-        Pandoc.setVerbosity Pandoc.ERROR
-        doc <- Pandoc.readMarkdown readOptions $ decodeUtf8 @Text md
-        Pandoc.writeMan Pandoc.def doc
-    either (throwError . PandocError) pure result
-  where
-    readOptions = Pandoc.def
-        { Pandoc.readerStandalone = True
-        , Pandoc.readerExtensions = Pandoc.githubMarkdownExtensions
-        }
-
--- | We only work with 'MetaInlines' because we know that's all we need
-textMetaValue :: Pandoc.MetaValue -> Text
-textMetaValue = \case
-    Pandoc.MetaInlines is -> mconcat $ map go is
-    _ -> ""
-  where
-    go = \case
-        Pandoc.Str x -> x
-        Pandoc.Space -> " "
-        _ -> ""
-
-findManPage
-    :: (MonadIO m, MonadError ManPageError m, MonadReader env m, HasManPath env)
-    => ManPage
-    -> m FilePath
-findManPage page = do
-    manPath <- view manPathL
-    let candidates = concatMap toPaths manPath
-    maybe (throwError ManPageNotFound) pure =<< findM doesFileExist candidates
-  where
-    section = manPageSection page
-    name = manPageName page
-    path =
-        sectionPath section </> unpack (getName name) <> sectionSuffix section
-    toPaths dir = [dir </> path, dir </> path <.> "gz"]
-
-readManPage :: MonadIO m => FilePath -> m Text
-readManPage path = decodeUtf8 . toStrict . decompress <$> readFileLBS path
-  where
-    decompress
-        | takeExtension path == ".gz" = GZip.decompress
-        | otherwise = id
+link :: [Inline] -> Text -> Inline
+link inner url = Link nullAttr inner (url, "")

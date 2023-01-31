@@ -1,58 +1,91 @@
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
+
 module Bluebook.ManPage
-    ( ManPage
+    ( ManPage(..)
     , newManPage
-    , manPageSection
-    , manPageName
-    , manPageFromFile
-    , manPageFromRef
-    , manPageToRef
-    , manPageUrlPath
+    , inSectionPath
+    , read
+    , bluebook
     ) where
 
 import Bluebook.Prelude
 
-import Bluebook.ManPage.Name
-import Bluebook.ManPage.Section
-import qualified Data.Text as T
-import System.FilePath (takeFileName)
+import Bluebook.Error
+import qualified Codec.Compression.GZip as GZip
+import Data.Aeson (ToJSON)
+import Data.FileEmbed
+import System.FilePath (splitDirectories, takeExtension, (<.>), (</>))
+import Text.Pandoc.Options as Pandoc
+import Text.Pandoc.Readers.Markdown as Pandoc
+import Text.Pandoc.Writers.Man as Pandoc
 
 data ManPage = ManPage
-    { section :: Section
-    , name :: Name
+    { sourcePath :: FilePath
+    , outputPath :: FilePath
+    , section :: Int
+    , name :: Text
+    , url :: Text
+    , ref :: Text
     }
-    deriving stock (Eq, Ord, Show)
+    deriving stock (Show, Eq, Generic)
+    deriving anyclass ToJSON
 
-newManPage :: Section -> Name -> ManPage
-newManPage = ManPage
+inSectionPath :: FilePath -> ManPage -> Bool
+inSectionPath path page = sectionPath page == path
 
-manPageSection :: ManPage -> Section
-manPageSection = section
+sectionPath :: ManPage -> FilePath
+sectionPath = ("man" <>) . show . section
 
-manPageName :: ManPage -> Name
-manPageName = name
+newManPage :: FilePath -> FilePath -> Maybe ManPage
+newManPage parent path = do
+    -- "manN/foo.N[.gz]" => ["manN", "foo.N"]
+    [dir, fname] <- pure $ splitDirectories $ dropSuffix ".gz" path
 
--- @.../foo.1(.gz)@ -> @{ name:foo, section:1 }@
-manPageFromFile :: FilePath -> Either String ManPage
-manPageFromFile path =
-    ManPage <$> sectionFromSuffix (unpack suffix) <*> mkName name
+    -- "man[1-8]/" => [1-8]
+    section <- guarded (`elem` [1 .. 8]) =<< readMaybe =<< stripPrefix "man" dir
+
+    -- "foo.N" -> "foo"
+    name <- pack <$> stripSuffix ("." <> show section) fname
+
+    pure ManPage
+        { sourcePath = parent </> path
+        , outputPath = dir </> fname <.> "html"
+        , section
+        , name
+        , url = "/" <> pack dir <> "/" <> pack fname <> ".html"
+        , ref = name <> "(" <> show section <> ")"
+        }
+
+read :: MonadIO m => (FilePath -> m ByteString) -> ManPage -> m Text
+read f page
+    | ref page == ref bluebook = bluebookContent
+    | isGZip = decodeUtf8 . decompress <$> f (sourcePath page)
+    | otherwise = decodeUtf8 <$> f (sourcePath page)
   where
-    (name, suffix) =
-        T.breakOn "." $ pack $ dropSuffix ".gz" $ takeFileName path
+    isGZip = takeExtension (sourcePath page) == ".gz"
+    decompress = toStrict . GZip.decompress . fromStrict
 
--- @foo(1)@ -> @{ name:foo, section:1 }@
-manPageFromRef :: Text -> Either String ManPage
-manPageFromRef t = do
-    let (name, ref) = T.breakOn "(" $ T.strip t
-    ManPage <$> sectionFromRef ref <*> mkName name
+bluebook :: ManPage
+bluebook = ManPage
+    { sourcePath = "/dev/null" -- ignored
+    , outputPath = "man1/bluebook.1.html"
+    , section = 1
+    , name = "bluebook"
+    , url = "/man1/bluebook.1.html"
+    , ref = "bluebook(1)"
+    }
 
-manPageToRef :: ManPage -> Text
-manPageToRef ManPage {..} = getName name <> sectionRef section
+bluebookContent :: MonadIO m => m Text
+bluebookContent = runPandoc $ do
+    doc <- Pandoc.readMarkdown readOptions $ decodeUtf8 @Text readmeMd
+    Pandoc.writeMan Pandoc.def doc
+  where
+    readOptions = Pandoc.def
+        { Pandoc.readerStandalone = True
+        , Pandoc.readerExtensions = Pandoc.githubMarkdownExtensions
+        }
 
--- @{ name:foo, section:1 }@ -> @man1/foo.1.html@
-manPageUrlPath :: ManPage -> Text
-manPageUrlPath ManPage {..} =
-    pack (sectionPath section)
-        <> "/"
-        <> getName name
-        <> pack (sectionSuffix section)
-        <> ".html"
+readmeMd :: ByteString
+readmeMd = $(embedFile "README.md")

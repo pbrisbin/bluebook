@@ -1,11 +1,12 @@
-module Bluebook.PandocSpec
+module Bluebook.ConvertSpec
     ( spec
     ) where
 
 import Bluebook.Prelude
 
-import Bluebook.Pandoc
+import Bluebook.Convert
 import Test.Hspec
+import Text.Pandoc.Definition (Block(..), Inline(..), nullAttr)
 
 spec :: Spec
 spec = do
@@ -33,3 +34,18 @@ spec = do
             reduceHeaderLevels h4 `shouldBe` h5
             reduceHeaderLevels h5 `shouldBe` h6
             reduceHeaderLevels h6 `shouldBe` h6 -- bottom
+
+    describe "linkBareUrls" $ do
+        it "handles bracketed URLs" $ do
+            let input = "For more details see <https://example.com>."
+            linkBareUrls [Str input]
+                `shouldBe` [ Str "For"
+                           , Str "more"
+                           , Str "details"
+                           , Str "see"
+                           , Link
+                               ("", [], [])
+                               [Str "https://example.com"]
+                               ("https://example.com", "")
+                           , Str "."
+                           ]
