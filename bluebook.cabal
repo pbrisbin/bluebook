@@ -24,19 +24,14 @@ source-repository head
 
 library
   exposed-modules:
-      Bluebook.App
-      Bluebook.Artifact
-      Bluebook.CLI
       Bluebook.Convert
-      Bluebook.CSS
+      Bluebook.Error
       Bluebook.Html
-      Bluebook.Listing
+      Bluebook.Manifest
       Bluebook.ManPage
-      Bluebook.ManPage.Name
-      Bluebook.ManPage.Section
       Bluebook.ManPath
-      Bluebook.Pandoc
       Bluebook.Prelude
+      Bluebook.Shake
   other-modules:
       Paths_bluebook
   hs-source-dirs:
@@ -67,24 +62,22 @@ library
       StandaloneDeriving
       TypeApplications
       TypeFamilies
-  ghc-options: -fwrite-ide-info -Weverything -Wno-all-missed-specialisations -Wno-missing-import-lists -Wno-missing-kind-signatures -Wno-missing-local-signatures -Wno-missing-safe-haskell-mode -Wno-prepositive-qualified-module -Wno-unsafe -optP-Wno-nonportable-include-path
+  ghc-options: -fignore-optim-changes -fwrite-ide-info -Weverything -Wno-all-missed-specialisations -Wno-missing-import-lists -Wno-missing-kind-signatures -Wno-missing-local-signatures -Wno-missing-safe-haskell-mode -Wno-prepositive-qualified-module -Wno-unsafe -optP-Wno-nonportable-include-path
   build-depends:
-      Blammo
-    , base ==4.*
+      base ==4.*
     , blaze-html
     , envparse
     , errors
-    , exceptions
     , extra
     , file-embed
     , filepath
-    , http-api-data
     , microlens-platform
     , mtl
-    , optparse-applicative
     , pandoc
     , pandoc-types
     , relude
+    , semigroups
+    , shake
     , unliftio
     , unliftio-core
     , xdg-basedir
@@ -123,18 +116,19 @@ executable bluebook
       StandaloneDeriving
       TypeApplications
       TypeFamilies
-  ghc-options: -fwrite-ide-info -Weverything -Wno-all-missed-specialisations -Wno-missing-import-lists -Wno-missing-kind-signatures -Wno-missing-local-signatures -Wno-missing-safe-haskell-mode -Wno-prepositive-qualified-module -Wno-unsafe -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -fignore-optim-changes -fwrite-ide-info -Weverything -Wno-all-missed-specialisations -Wno-missing-import-lists -Wno-missing-kind-signatures -Wno-missing-local-signatures -Wno-missing-safe-haskell-mode -Wno-prepositive-qualified-module -Wno-unsafe -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base ==4.*
     , bluebook
-    , optparse-applicative
+    , file-embed
   default-language: Haskell2010
 
 test-suite spec
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Bluebook.PandocSpec
+      Bluebook.ConvertSpec
+      Bluebook.ManPageSpec
       Paths_bluebook
   hs-source-dirs:
       test
@@ -164,9 +158,10 @@ test-suite spec
       StandaloneDeriving
       TypeApplications
       TypeFamilies
-  ghc-options: -fwrite-ide-info -Weverything -Wno-all-missed-specialisations -Wno-missing-import-lists -Wno-missing-kind-signatures -Wno-missing-local-signatures -Wno-missing-safe-haskell-mode -Wno-prepositive-qualified-module -Wno-unsafe -optP-Wno-nonportable-include-path
+  ghc-options: -fignore-optim-changes -fwrite-ide-info -Weverything -Wno-all-missed-specialisations -Wno-missing-import-lists -Wno-missing-kind-signatures -Wno-missing-local-signatures -Wno-missing-safe-haskell-mode -Wno-prepositive-qualified-module -Wno-unsafe -optP-Wno-nonportable-include-path
   build-depends:
       base ==4.*
     , bluebook
     , hspec
+    , pandoc-types
   default-language: Haskell2010
