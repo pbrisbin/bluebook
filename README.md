@@ -10,11 +10,7 @@ bluebook - nicely render man-pages to html, with cross-linking
 
 Bluebook converts man-pages to html. In so doing, it applies styles and
 conversions to make the pages useful for browsing. This includes cross-linking
-references to other man-pages, and converting any bare URLs to actual HTML
-links.
-
-The files Bluebook creates are meant to be served by a web-server, not browsed
-directly on the file-system. See _EXAMPLES_.
+references to other man-pages it knows about.
 
 ## OPTIONS
 
@@ -26,11 +22,11 @@ Write html files in this directory, default is _./dist_.
 
 **MANPATH**
 
-`:`-separated list of directories to search for man-pages. Default is,
-
-```
-${XDG_DATA_DIR:-$HOME/.local/share}/man:/usr/local/share/man:/usr/share/man
-```
+> `:`-separated list of directories to search for man-pages. Default is,
+>
+> ```
+> ${XDG_DATA_DIR:-$HOME/.local/share}/man:/usr/local/share/man:/usr/share/man
+> ```
 
 ## NOTES
 
@@ -52,6 +48,13 @@ I could not find a tool that did the minimal things I need:
 
 If you know of such a tool, do let me know!
 
+## CAVEATS
+
+The files Bluebook creates are meant to be served by a web-server, not browsed
+directly on the file-system. For example, we render links to *directory/* and
+expect *directory/index.html* to be served. See _EXAMPLES_ for an easy way to
+achieve this behavior in a local context.
+
 ## EXAMPLES
 
 Convert all your system's man-pages into the `./dist` directory, serve them, and
@@ -61,4 +64,28 @@ browse them:
 bluebook
 docker run -d -p 8080:80 -v "$PWD"/dist:/usr/share/nginx/html:ro nginx
 $BROWSER http://localhost:8080
+```
+
+Use Bluebook in a GitHub Action to build a static site of man-pages for deploy:
+
+```
+- uses: pbrisbin/setup-tool-action@v1
+  with:
+    name: bluebook
+    version: 1.1.0.0
+    url: 'https://github.com/pbrisbin/{name}/releases/download/v{version}/{name}-{os}-{arch}'
+    no-extract: "true"
+
+- uses: actions/cache@v3
+  with:
+    path: |
+      ./.shake
+      ./_site
+    key: ...
+
+- name: Generate HTML
+  run: bluebook -o _site
+
+- name: Deploy
+  run: ...
 ```

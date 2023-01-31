@@ -15,6 +15,7 @@ dependencies:
   - base >= 4 && < 5
 
 ghc-options:
+  - -fignore-optim-changes
   - -fwrite-ide-info
   - -Weverything
   - -Wno-all-missed-specialisations
@@ -56,21 +57,21 @@ default-extensions:
 library:
   source-dirs: src
   dependencies:
-    - Blammo
+    - aeson
     - blaze-html
     - envparse
     - errors
-    - exceptions
     - extra
     - file-embed
     - filepath
-    - http-api-data
     - microlens-platform
     - mtl
     - optparse-applicative
     - pandoc
     - pandoc-types
     - relude
+    - semigroups
+    - shake
     - unliftio
     - unliftio-core
     - xdg-basedir
@@ -81,8 +82,11 @@ executables:
     main: Main.hs
     source-dirs: app
     dependencies:
+      - aeson
       - bluebook
-      - optparse-applicative
+      - file-embed
+      - shake
+      - unliftio
     ghc-options:
       - -threaded
       - -rtsopts
@@ -95,3 +99,4 @@ tests:
     dependencies:
       - bluebook
       - hspec
+      - pandoc-types

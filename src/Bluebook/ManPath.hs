@@ -1,6 +1,5 @@
 module Bluebook.ManPath
-    ( HasManPath(..)
-    , getEnvManPath
+    ( getEnvManPath
     ) where
 
 import Bluebook.Prelude
@@ -20,9 +19,3 @@ getDefaultManPath :: MonadIO m => m [FilePath]
 getDefaultManPath = liftIO $ do
     manDataDir <- XDG.getUserDataDir "man"
     pure [manDataDir, "/usr/local/share/man", "/usr/share/man"]
-
-class HasManPath env where
-    manPathL :: Lens' env [FilePath]
-
-instance HasManPath [FilePath] where
-    manPathL = id
