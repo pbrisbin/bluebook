@@ -2,12 +2,14 @@ module Bluebook.Manifest
     ( Manifest
     , load
     , toList
+    , filter
+    , filterSection
     , lookup
     , lookupRef
     , addBluebook
     ) where
 
-import Bluebook.Prelude hiding (fromList, toList)
+import Bluebook.Prelude hiding (filter, fromList, toList)
 
 import Bluebook.ManPage (ManPage, newManPage)
 import qualified Bluebook.ManPage as ManPage
@@ -51,6 +53,13 @@ fromList pages = Manifest
 
 toList :: Manifest -> [ManPage]
 toList = Map.elems . outputs -- arbitrary which to use
+
+filter :: (ManPage -> Bool) -> Manifest -> Manifest
+filter p Manifest {..} =
+    Manifest { outputs = Map.filter p outputs, refs = Map.filter p refs }
+
+filterSection :: Int -> Manifest -> Manifest
+filterSection n = filter (`ManPage.isSection` n)
 
 lookup :: FilePath -> Manifest -> Maybe ManPage
 lookup path = Map.lookup path . outputs

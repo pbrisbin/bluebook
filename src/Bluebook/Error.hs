@@ -13,12 +13,15 @@ import UnliftIO.Exception (throwIO)
 
 data Error
     = FileNotFound FilePath
+    | InvalidSectionPath FilePath
     | PandocError Pandoc.PandocError
     deriving stock Show
 
 instance Exception Error where
     displayException = \case
         FileNotFound path -> "File not found: " <> path
+        InvalidSectionPath path ->
+            "Invalid section: " <> path <> ", must be man[1-8]"
         PandocError e ->
             "Error in Pandoc conversion: " <> unpack (Pandoc.renderError e)
 

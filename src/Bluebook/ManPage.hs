@@ -5,9 +5,13 @@
 module Bluebook.ManPage
     ( ManPage(..)
     , newManPage
-    , inSectionPath
+    , isSection
     , read
     , bluebook
+
+    -- * Utilities
+    , readSection
+    , readSectionThrow
     ) where
 
 import Bluebook.Prelude
@@ -20,6 +24,7 @@ import System.FilePath (splitDirectories, takeExtension, (<.>), (</>))
 import Text.Pandoc.Options as Pandoc
 import Text.Pandoc.Readers.Markdown as Pandoc
 import Text.Pandoc.Writers.Man as Pandoc
+import UnliftIO.Exception (throwIO)
 
 data ManPage = ManPage
     { sourcePath :: FilePath
@@ -32,19 +37,16 @@ data ManPage = ManPage
     deriving stock (Show, Eq, Generic)
     deriving anyclass ToJSON
 
-inSectionPath :: FilePath -> ManPage -> Bool
-inSectionPath path page = sectionPath page == path
-
-sectionPath :: ManPage -> FilePath
-sectionPath = ("man" <>) . show . section
+isSection :: ManPage -> Int -> Bool
+isSection page = (section page ==)
 
 newManPage :: FilePath -> FilePath -> Maybe ManPage
 newManPage parent path = do
     -- "manN/foo.N[.gz]" => ["manN", "foo.N"]
     [dir, fname] <- pure $ splitDirectories $ dropSuffix ".gz" path
 
-    -- "man[1-8]/" => [1-8]
-    section <- guarded (`elem` [1 .. 8]) =<< readMaybe =<< stripPrefix "man" dir
+    -- "man[1-8]" => [1-8]
+    section <- readSection dir
 
     -- "foo.N" -> "foo"
     name <- pack <$> stripSuffix ("." <> show section) fname
@@ -57,6 +59,13 @@ newManPage parent path = do
         , url = "/" <> pack dir <> "/" <> pack fname <> ".html"
         , ref = name <> "(" <> show section <> ")"
         }
+
+readSection :: FilePath -> Maybe Int
+readSection = guarded (`elem` [1 .. 8]) <=< readMaybe <=< stripPrefix "man"
+
+readSectionThrow :: MonadIO m => FilePath -> m Int
+readSectionThrow path =
+    maybe (throwIO $ InvalidSectionPath path) pure $ readSection path
 
 read :: MonadIO m => (FilePath -> m ByteString) -> ManPage -> m Text
 read f page
