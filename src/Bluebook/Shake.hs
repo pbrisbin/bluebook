@@ -23,7 +23,7 @@ defaultShakeOptions :: ShakeOptions
 defaultShakeOptions = shakeOptions
     { shakeThreads = 0
     , shakeVerbosity = Verbose
-    , shakeChange = ChangeDigest
+    , shakeChange = ChangeModtimeAndDigestInput
     , shakeColor = True
     }
 
