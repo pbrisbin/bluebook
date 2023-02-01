@@ -15,7 +15,7 @@ import qualified Data.Text as T
 import Text.Blaze.Html (Html)
 import qualified Text.Blaze.Html.Renderer.Utf8 as Blaze
 import qualified Text.Blaze.Html5 as Html
-import Text.Blaze.Html5 (docTypeHtml, toHtml, toValue, (!))
+import Text.Blaze.Html5 ((!), docTypeHtml, toHtml, toValue)
 import qualified Text.Blaze.Html5.Attributes as Html
     (charset, class_, href, rel)
 

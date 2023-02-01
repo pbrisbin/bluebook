@@ -9,11 +9,11 @@ import Bluebook.Prelude hiding (readFileBS, writeFileBS)
 import Bluebook.Convert
 import Bluebook.Error
 import Bluebook.Html
-import Bluebook.Manifest (Manifest)
-import qualified Bluebook.Manifest as Manifest
 import Bluebook.ManPage (readSectionThrow)
 import qualified Bluebook.ManPage as ManPage
 import Bluebook.ManPath
+import Bluebook.Manifest (Manifest)
+import qualified Bluebook.Manifest as Manifest
 import Bluebook.Shake
 import Data.Aeson (encode)
 import Data.FileEmbed
