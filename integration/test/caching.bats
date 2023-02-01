@@ -10,9 +10,7 @@ load /usr/lib/bats-assert/load
   mkdir -p "$(dirname "$foo")"
   rm -f "$foo"
 
-  dist=test/dist
-  rm -rf "$dist"
-  mkdir -p "$dist"
+  dist=$(mktemp -d)
   bluebook -C "$dist" --no-color
 
   # Ensure fully-cached
