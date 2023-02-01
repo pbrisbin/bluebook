@@ -30,7 +30,6 @@ library
       Bluebook.Manifest
       Bluebook.ManPage
       Bluebook.ManPath
-      Bluebook.Options
       Bluebook.Prelude
       Bluebook.Shake
   other-modules:
@@ -75,7 +74,6 @@ library
     , filepath
     , microlens-platform
     , mtl
-    , optparse-applicative
     , pandoc
     , pandoc-types
     , relude

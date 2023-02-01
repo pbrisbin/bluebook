@@ -4,7 +4,7 @@ bluebook - nicely render man-pages to html, with cross-linking
 
 ## SYNOPSIS
 
-**bluebook** [**\--out**=*PATH*]
+**bluebook** [*option*]... [*target*]...
 
 ## DESCRIPTION
 
@@ -14,9 +14,38 @@ references to other man-pages it knows about.
 
 ## OPTIONS
 
-**\-o**, **\--out** _<PATH\>_
+Bluebook comprises a small set of *Shake* rules for producing its artifacts. As
+such, the **bluebook** executable's option parser is provided by Shake. For more
+details on Shake, see https://shakebuild.com/manual.
 
-Write html files in this directory, default is _./dist_.
+To see all available options, run **bluebook --help**. The following lists
+commonly-needed and/or overridden options only.
+
+**\-C**, **\--directory**=*DIRECTORY*
+
+> Produce our artifacts into *DIRECTORY*. By default artifacts are produced into
+> the current directory.
+
+**\--color**
+
+> Colorize output. This option is enabled by default, use **\--no-color** to
+> disable.
+
+**\--digest**
+
+> Consider files changed based on their contents, not modtime. This option is
+> enabled by default, use another **\--digest** option to override.
+
+**\-j**, **\--jobs**[=*N*]
+
+> Process *N* targets concurrently (default is number of CPUs). This option is
+> enabled by default, use **\--jobs** again to override (with value *1* to
+> disable).
+
+**\--verbose**
+
+> Increase verbosity. This option is enabled (once) by default, use **\--quiet**
+> to override, or pass it again to increase further.
 
 ## ENVIRONMENT
 
@@ -61,9 +90,17 @@ Convert all your system's man-pages into the `./dist` directory, serve them, and
 browse them:
 
 ```
-bluebook
+bluebook -C dist --color -j -p -V
 docker run -d -p 8080:80 -v "$PWD"/dist:/usr/share/nginx/html:ro nginx
 $BROWSER http://localhost:8080
+```
+
+Convert a single man-page and view its HTML in a Browser (navigation links won't
+work, but the single page will):
+
+```
+MANPATH=/path/to/man bluebook -C /tmp man1/page.1.html
+$BROWSER /tmp/man1/page.1.html
 ```
 
 Use Bluebook in a GitHub Action to build a static site of man-pages for deploy:
@@ -80,11 +117,11 @@ Use Bluebook in a GitHub Action to build a static site of man-pages for deploy:
   with:
     path: |
       ./.shake
-      ./_site
+      ./dist
     key: ...
 
 - name: Generate HTML
-  run: bluebook -o _site
+  run: bluebook -C dist
 
 - name: Deploy
   run: ...
