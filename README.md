@@ -26,26 +26,26 @@ commonly-needed and/or overridden options only.
 > Produce our artifacts into *DIRECTORY*. By default artifacts are produced into
 > the current directory.
 
+The following options represent **bluebook**'s default behavior:
+
 **\--color**
 
-> Colorize output. This option is enabled by default, use **\--no-color** to
-> disable.
+> Colorize output. Use **\--no-color** to disable.
 
-**\--digest**
+**\--digest-and-input**
 
-> Consider files changed based on their contents, not modtime. This option is
-> enabled by default, use another **\--digest** option to override.
+> Consider files changed based on their modtime and digest for inputs. Use
+> another **\--digest** option to override.
 
 **\-j**, **\--jobs**[=*N*]
 
-> Process *N* targets concurrently (default is number of CPUs). This option is
-> enabled by default, use **\--jobs** again to override (with value *1* to
-> disable).
+> Process *N* targets concurrently (defaulted to number of CPUs). Use
+> **\--jobs** again to override (with value *1* to disable).
 
 **\--verbose**
 
-> Increase verbosity. This option is enabled (once) by default, use **\--quiet**
-> to override, or pass it again to increase further.
+> Increase verbosity. Use **\--quiet** to override, or pass it again to increase
+> further.
 
 ## ENVIRONMENT
 
