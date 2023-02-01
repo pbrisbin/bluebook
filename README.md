@@ -14,16 +14,16 @@ references to other man-pages it knows about.
 
 ## OPTIONS
 
-Bluebook comprises a small set of *Shake* rules for producing its artifacts. As
+Bluebook comprises a small set of _Shake_ rules for producing its artifacts. As
 such, the **bluebook** executable's option parser is provided by Shake. For more
 details on Shake, see https://shakebuild.com/manual.
 
 To see all available options, run **bluebook --help**. The following lists
 commonly-needed and/or overridden options only.
 
-**\-C**, **\--directory**=*DIRECTORY*
+**\-C**, **\--directory**=_DIRECTORY_
 
-> Produce our artifacts into *DIRECTORY*. By default artifacts are produced into
+> Produce our artifacts into _DIRECTORY_. By default artifacts are produced into
 > the current directory.
 
 **\--color**
@@ -38,8 +38,8 @@ commonly-needed and/or overridden options only.
 
 **\-j**, **\--jobs**[=*N*]
 
-> Process *N* targets concurrently (default is number of CPUs). This option is
-> enabled by default, use **\--jobs** again to override (with value *1* to
+> Process _N_ targets concurrently (default is number of CPUs). This option is
+> enabled by default, use **\--jobs** again to override (with value _1_ to
 > disable).
 
 **\--verbose**
@@ -80,8 +80,8 @@ If you know of such a tool, do let me know!
 ## CAVEATS
 
 The files Bluebook creates are meant to be served by a web-server, not browsed
-directly on the file-system. For example, we render links to *directory/* and
-expect *directory/index.html* to be served. See _EXAMPLES_ for an easy way to
+directly on the file-system. For example, we render links to _directory/_ and
+expect _directory/index.html_ to be served. See _EXAMPLES_ for an easy way to
 achieve this behavior in a local context.
 
 ## EXAMPLES
