@@ -25,8 +25,11 @@ main = runShake $ do
         manPath <- getEnvManPath
         Manifest.addBluebook <$> foldMapM Manifest.load manPath
 
-    writeIndexJson manifest
-    writeSectionIndexJsons manifest
+    -- Putting these under action avoids them running on commands like --help
+    -- that aren't doing any actual building; no other difference.
+    action $ do
+        writeIndexJson manifest
+        writeSectionIndexJsons manifest
 
     "man*" </> "*.*" <.> "html" %> \out -> do
         page <- findFile (`Manifest.lookup` manifest) out
@@ -36,6 +39,7 @@ main = runShake $ do
             pure $ errorHtml e
         writeFileBS out $ renderHtmlManPage page html
 
+    -- Add a want for every page in the manifest
     want $ map ManPage.outputPath $ Manifest.toList manifest
 
     "man*" </> "index" <.> "html" %> \out -> do
@@ -47,6 +51,7 @@ main = runShake $ do
         need [out -<.> "json"]
         writeFileBS out $ renderHtmlIndex title pages
 
+    -- Add a want for every manN/ index
     want $ map (\n -> "man" <> show @_ @Int n </> "index" <.> "html") [1 .. 8]
 
     "index" <.> "html" %>! \out -> do
