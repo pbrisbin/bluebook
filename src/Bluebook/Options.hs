@@ -1,25 +1,15 @@
 module Bluebook.Options
     ( Options(..)
-    , toShakeOptions
     , parseOptions
     ) where
 
 import Bluebook.Prelude
 
-import Development.Shake
-    (Change(..), ShakeOptions(..), Verbosity(..), shakeOptions)
 import Options.Applicative
 
-newtype Options = Options
+data Options = Options
     { dist :: FilePath
-    }
-
-toShakeOptions :: Options -> ShakeOptions
-toShakeOptions _ = shakeOptions
-    { shakeThreads = 0
-    , shakeVerbosity = Verbose
-    , shakeChange = ChangeDigest
-    , shakeColor = True
+    , targets :: [FilePath]
     }
 
 parseOptions :: IO Options
@@ -38,3 +28,7 @@ optionsParser = Options
         <> value "dist"
         <> action "directory"
         )
+    <*> many (strArgument
+        (  metavar "TARGET"
+        <> help "Specify Shake target"
+        ))

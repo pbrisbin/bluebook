@@ -5,20 +5,18 @@ module Main
     ) where
 
 import Bluebook.Prelude hiding (readFileBS, writeFileBS)
-import qualified Bluebook.Prelude as Prelude
 
 import Bluebook.Convert
 import Bluebook.Error
 import Bluebook.Html
+import Bluebook.Manifest (Manifest)
 import qualified Bluebook.Manifest as Manifest
 import qualified Bluebook.ManPage as ManPage
 import Bluebook.ManPath
 import Bluebook.Options
+import Bluebook.Shake
 import Data.Aeson (encode)
 import Data.FileEmbed
-import Development.Shake
-import Development.Shake.FilePath
-import UnliftIO.Directory (createDirectoryIfMissing)
 
 main :: IO ()
 main = do
@@ -27,24 +25,9 @@ main = do
     let undist = dropPrefix $ dist <> [pathSeparator]
         manifestPath = dist </> "manifest" <.> "json"
 
-    manifest <- do
-        manPath <- getEnvManPath
-        m <- Manifest.addBluebook <$> foldMapM Manifest.load manPath
-        m <$ writeFileLBS manifestPath (encode m)
+    manifest <- loadAndSaveManifest manifestPath
 
-    shakeArgs (toShakeOptions options) $ do
-        dist </> "index" <.> "html" %> \out -> do
-            need [manifestPath]
-            let pages = Manifest.toList manifest
-            writeFileBS out $ renderHtmlIndex Nothing pages
-
-        dist </> "man*" </> "index" <.> "html" %> \out -> do
-            need [manifestPath]
-            let section = takeDirectory $ undist out
-                pages = filter (ManPage.inSectionPath section)
-                    $ Manifest.toList manifest
-            writeFileBS out $ renderHtmlIndex (Just $ pack section) pages
-
+    runShake options $ do
         dist </> "man*" </> "*.*" <.> "html" %> \out -> do
             page <- findFile (`Manifest.lookup` manifest) $ undist out
             content <- ManPage.read readFileBS page
@@ -53,29 +36,42 @@ main = do
                 pure $ errorHtml e
             writeFileBS out $ renderHtmlManPage page html
 
-        dist </> "css" </> "main" <.> "css" %> (`writeFileBS` css)
+        want $ map ((dist </>) . ManPage.outputPath) $ Manifest.toList manifest
 
-        dist </> "404" <.> "html" %> (`writeFileBS` notFoundHtml)
+        dist </> "man*" </> "index" <.> "html" %> \out -> do
+            need [manifestPath]
+            let section = takeDirectory $ undist out
+                pages = filter (ManPage.inSectionPath section)
+                    $ Manifest.toList manifest
+            writeFileBS out $ renderHtmlIndex (Just $ pack section) pages
 
         want
-            $ map (dist </>)
-            $ ["index" <.> "html", "css" </> "main" <.> "css", "404" <.> "html"]
-            <> map
-                   (\n -> "man" <> show @_ @Int n </> "index" <.> "html")
-                   [1 .. 8]
-            <> map ManPage.outputPath (Manifest.toList manifest)
+            [ dist </> "man1" </> "index" <.> "html"
+            , dist </> "man2" </> "index" <.> "html"
+            , dist </> "man3" </> "index" <.> "html"
+            , dist </> "man4" </> "index" <.> "html"
+            , dist </> "man5" </> "index" <.> "html"
+            , dist </> "man6" </> "index" <.> "html"
+            , dist </> "man7" </> "index" <.> "html"
+            , dist </> "man8" </> "index" <.> "html"
+            ]
+
+        dist </> "index" <.> "html" %>! \out -> do
+            need [manifestPath]
+            let pages = Manifest.toList manifest
+            writeFileBS out $ renderHtmlIndex Nothing pages
+
+        dist </> "css" </> "main" <.> "css" %>! (`writeFileBS` css)
+
+        dist </> "404" <.> "html" %>! (`writeFileBS` notFoundHtml)
 
         phony "clean" $ liftIO $ removeFiles dist ["//*"]
 
+loadAndSaveManifest :: FilePath -> IO Manifest
+loadAndSaveManifest path = do
+    manPath <- getEnvManPath
+    m <- Manifest.addBluebook <$> foldMapM Manifest.load manPath
+    m <$ writeFileLBS path (encode m)
+
 css :: ByteString
 css = $(embedFile "bluebook.css")
-
-readFileBS :: FilePath -> Action ByteString
-readFileBS name = do
-    need [name]
-    Prelude.readFileBS name
-
-writeFileBS :: MonadIO m => FilePath -> ByteString -> m ()
-writeFileBS name x = do
-    createDirectoryIfMissing True $ takeDirectory name
-    Prelude.writeFileBS name x
