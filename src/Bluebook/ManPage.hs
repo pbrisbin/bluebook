@@ -20,7 +20,7 @@ import Bluebook.Error
 import qualified Codec.Compression.GZip as GZip
 import Data.Aeson (ToJSON)
 import Data.FileEmbed
-import System.FilePath (splitDirectories, takeExtension, (<.>), (</>))
+import System.FilePath ((<.>), (</>), splitDirectories, takeExtension)
 import Text.Pandoc.Options as Pandoc
 import Text.Pandoc.Readers.Markdown as Pandoc
 import Text.Pandoc.Writers.Man as Pandoc

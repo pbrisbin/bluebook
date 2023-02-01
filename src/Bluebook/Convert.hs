@@ -11,10 +11,10 @@ module Bluebook.Convert
 import Bluebook.Prelude
 
 import Bluebook.Error
-import Bluebook.Manifest (Manifest)
-import qualified Bluebook.Manifest as Manifest
 import Bluebook.ManPage (ManPage)
 import qualified Bluebook.ManPage as ManPage
+import Bluebook.Manifest (Manifest)
+import qualified Bluebook.Manifest as Manifest
 import qualified Data.Text as T
 import Text.Blaze.Html (Html)
 import Text.Pandoc.Definition as Pandoc
