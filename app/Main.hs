@@ -21,7 +21,12 @@ import UnliftIO.Directory (createDirectoryIfMissing)
 
 main :: IO ()
 main = runShake $ do
-    manifest <- loadAndSaveManifests
+    manifest <- do
+        manPath <- getEnvManPath
+        Manifest.addBluebook <$> foldMapM Manifest.load manPath
+
+    writeIndexJson manifest
+    writeSectionIndexJsons manifest
 
     "man*" </> "*.*" <.> "html" %> \out -> do
         page <- findFile (`Manifest.lookup` manifest) out
@@ -58,17 +63,14 @@ main = runShake $ do
 
     phony "clean" $ liftIO $ removeFiles "." ["//*"]
 
-loadAndSaveManifests :: MonadIO m => m Manifest
-loadAndSaveManifests = do
-    manPath <- getEnvManPath
-    m <- Manifest.addBluebook <$> foldMapM Manifest.load manPath
+writeIndexJson :: MonadIO m => Manifest -> m ()
+writeIndexJson = writeFileLBS ("index" <.> "json") . encode
 
-    for_ [1 .. 8] $ \n -> do
-        let json = "man" <> show n </> "index" <.> "json"
-        createDirectoryIfMissing True $ takeDirectory json
-        writeFileLBS json $ encode $ Manifest.filterSection n m
-
-    m <$ writeFileLBS ("index" <.> "json") (encode m)
+writeSectionIndexJsons :: MonadIO m => Manifest -> m ()
+writeSectionIndexJsons m = for_ [1 .. 8] $ \n -> do
+    let path = "man" <> show n </> "index" <.> "json"
+    createDirectoryIfMissing True $ takeDirectory path
+    writeFileLBS path $ encode $ Manifest.filterSection n m
 
 css :: ByteString
 css = $(embedFile "bluebook.css")
