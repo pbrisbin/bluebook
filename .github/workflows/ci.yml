@@ -24,6 +24,23 @@ jobs:
           path: |
             ${{ steps.stack.outputs.local-bin }}/bluebook
 
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: mig4/setup-bats@v1
+        with:
+          bats-version: 1.7.0
+      - uses: brokenpip3/setup-bats-libs@0.1.0
+      - uses: actions/download-artifact@v3
+        with:
+          name: stack-bin
+          path: stack-bin
+      - run: |
+          chmod +x stack-bin/bluebook
+          sudo cp stack-bin/bluebook /usr/local/bin/bluebook
+      - run: bats --recursive integration/test
+
   lint:
     runs-on: ubuntu-latest
     steps:
