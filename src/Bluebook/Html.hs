@@ -19,10 +19,10 @@ import Text.Blaze.Html5 (docTypeHtml, toHtml, toValue, (!))
 import qualified Text.Blaze.Html5.Attributes as Html
     (charset, class_, href, rel)
 
-renderHtmlIndex :: Maybe Text -> [ManPage] -> ByteString
-renderHtmlIndex mTitle pages = renderHtml mTitle $ do
+renderHtmlIndex :: Text -> [ManPage] -> ByteString
+renderHtmlIndex title pages = renderHtml title $ do
     Html.header $ do
-        Html.h1 $ toHtml $ maybe "man/" (\s -> "man/" <> s <> "/") mTitle
+        Html.h1 $ toHtml title
     Html.section $ Html.ul $ for_ (sortOn ManPage.ref pages) $ \page ->
         Html.li
             $ Html.a
@@ -31,7 +31,7 @@ renderHtmlIndex mTitle pages = renderHtml mTitle $ do
             $ ManPage.ref page
 
 renderHtmlManPage :: ManPage -> Html -> ByteString
-renderHtmlManPage page html = renderHtml (Just title) $ do
+renderHtmlManPage page html = renderHtml title $ do
     Html.section ! Html.class_ "man-page" $ do
         Html.header $ Html.h1 $ Html.toHtml title
         html
@@ -53,12 +53,12 @@ renderHtmlManPage page html = renderHtml (Just title) $ do
         8 -> "System Management Commands"
         _ -> "N/A"
 
-renderHtml :: Maybe Text -> Html -> ByteString
-renderHtml mTitle body = toStrict $ Blaze.renderHtml $ docTypeHtml $ do
+renderHtml :: Text -> Html -> ByteString
+renderHtml title body = toStrict $ Blaze.renderHtml $ docTypeHtml $ do
     Html.head $ do
         Html.meta ! Html.charset "UTF-8"
         Html.link ! Html.rel "stylesheet" ! Html.href "/css/main.css"
-        Html.title $ toHtml $ maybe "Bluebook" ("Bluebook - " <>) mTitle
+        Html.title $ toHtml $ "Bluebook - " <> title
     Html.body $ do
         Html.nav $ Html.ul $ do
             Html.li $ Html.a ! Html.href "/" $ "Home"
@@ -78,8 +78,8 @@ renderHtml mTitle body = toStrict $ Blaze.renderHtml $ docTypeHtml $ do
                 $ ManPage.ref ManPage.bluebook
             " — © 2023 Patrick Brisbin"
 
-notFoundHtml :: ByteString
-notFoundHtml = renderHtml (Just "Not Found") $ Html.p "Page not found"
+notFoundHtml :: Html
+notFoundHtml = Html.p "Page not found"
 
 errorHtml :: Error -> Html
 errorHtml e = do
