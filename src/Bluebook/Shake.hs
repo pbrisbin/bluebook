@@ -12,19 +12,15 @@ module Bluebook.Shake
 import Bluebook.Prelude hiding (readFileBS, writeFileBS)
 import qualified Bluebook.Prelude as Prelude
 
-import Bluebook.Options
 import Development.Shake
 import Development.Shake.FilePath
 import UnliftIO.Directory (createDirectoryIfMissing)
 
-runShake :: Options -> Rules () -> IO ()
-runShake options@Options {..} f = shakeArgs (toShakeOptions options) $ do
-    if null targets
-        then f
-        else want (map (dist </>) targets) >> withoutActions f
+runShake :: Rules () -> IO ()
+runShake = shakeArgs defaultShakeOptions
 
-toShakeOptions :: Options -> ShakeOptions
-toShakeOptions _ = shakeOptions
+defaultShakeOptions :: ShakeOptions
+defaultShakeOptions = shakeOptions
     { shakeThreads = 0
     , shakeVerbosity = Verbose
     , shakeChange = ChangeDigest

@@ -13,59 +13,54 @@ import Bluebook.Manifest (Manifest)
 import qualified Bluebook.Manifest as Manifest
 import qualified Bluebook.ManPage as ManPage
 import Bluebook.ManPath
-import Bluebook.Options
 import Bluebook.Shake
 import Data.Aeson (encode)
 import Data.FileEmbed
 
 main :: IO ()
 main = do
-    options@Options {..} <- parseOptions
-
-    let undist = dropPrefix $ dist <> [pathSeparator]
-        manifestPath = dist </> "manifest" <.> "json"
-
+    let manifestPath = "manifest" <.> "json"
     manifest <- loadAndSaveManifest manifestPath
 
-    runShake options $ do
-        dist </> "man*" </> "*.*" <.> "html" %> \out -> do
-            page <- findFile (`Manifest.lookup` manifest) $ undist out
+    runShake $ do
+        "man*" </> "*.*" <.> "html" %> \out -> do
+            page <- findFile (`Manifest.lookup` manifest) out
             content <- ManPage.read readFileBS page
             html <- manPage2Html manifest content `actionCatch` \e -> do
                 putWarn $ displayException e
                 pure $ errorHtml e
             writeFileBS out $ renderHtmlManPage page html
 
-        want $ map ((dist </>) . ManPage.outputPath) $ Manifest.toList manifest
+        want $ map ManPage.outputPath $ Manifest.toList manifest
 
-        dist </> "man*" </> "index" <.> "html" %> \out -> do
+        "man*" </> "index" <.> "html" %> \out -> do
             need [manifestPath]
-            let section = takeDirectory $ undist out
+            let section = takeDirectory out
                 pages = filter (ManPage.inSectionPath section)
                     $ Manifest.toList manifest
             writeFileBS out $ renderHtmlIndex (Just $ pack section) pages
 
         want
-            [ dist </> "man1" </> "index" <.> "html"
-            , dist </> "man2" </> "index" <.> "html"
-            , dist </> "man3" </> "index" <.> "html"
-            , dist </> "man4" </> "index" <.> "html"
-            , dist </> "man5" </> "index" <.> "html"
-            , dist </> "man6" </> "index" <.> "html"
-            , dist </> "man7" </> "index" <.> "html"
-            , dist </> "man8" </> "index" <.> "html"
+            [ "man1" </> "index" <.> "html"
+            , "man2" </> "index" <.> "html"
+            , "man3" </> "index" <.> "html"
+            , "man4" </> "index" <.> "html"
+            , "man5" </> "index" <.> "html"
+            , "man6" </> "index" <.> "html"
+            , "man7" </> "index" <.> "html"
+            , "man8" </> "index" <.> "html"
             ]
 
-        dist </> "index" <.> "html" %>! \out -> do
+        "index" <.> "html" %>! \out -> do
             need [manifestPath]
             let pages = Manifest.toList manifest
             writeFileBS out $ renderHtmlIndex Nothing pages
 
-        dist </> "css" </> "main" <.> "css" %>! (`writeFileBS` css)
+        "css" </> "main" <.> "css" %>! (`writeFileBS` css)
 
-        dist </> "404" <.> "html" %>! (`writeFileBS` notFoundHtml)
+        "404" <.> "html" %>! (`writeFileBS` notFoundHtml)
 
-        phony "clean" $ liftIO $ removeFiles dist ["//*"]
+        phony "clean" $ liftIO $ removeFiles "." ["//*"]
 
 loadAndSaveManifest :: FilePath -> IO Manifest
 loadAndSaveManifest path = do
