@@ -84,6 +84,7 @@ executables:
       - aeson
       - bluebook
       - file-embed
+      - unliftio
     ghc-options:
       - -threaded
       - -rtsopts

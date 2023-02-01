@@ -17,6 +17,7 @@ import Bluebook.ManPath
 import Bluebook.Shake
 import Data.Aeson (encode)
 import Data.FileEmbed
+import UnliftIO.Directory (createDirectoryIfMissing)
 
 main :: IO ()
 main = runShake $ do
@@ -41,16 +42,7 @@ main = runShake $ do
         need [out -<.> "json"]
         writeFileBS out $ renderHtmlIndex title pages
 
-    want
-        [ "man1" </> "index" <.> "html"
-        , "man2" </> "index" <.> "html"
-        , "man3" </> "index" <.> "html"
-        , "man4" </> "index" <.> "html"
-        , "man5" </> "index" <.> "html"
-        , "man6" </> "index" <.> "html"
-        , "man7" </> "index" <.> "html"
-        , "man8" </> "index" <.> "html"
-        ]
+    want $ map (\n -> "man" <> show @_ @Int n </> "index" <.> "html") [1 .. 8]
 
     "index" <.> "html" %>! \out -> do
         let title = "All man-pages"
@@ -71,14 +63,12 @@ loadAndSaveManifests = do
     manPath <- getEnvManPath
     m <- Manifest.addBluebook <$> foldMapM Manifest.load manPath
 
-    for_ [1 .. 8] $ \n ->
-        writeFileLBS ("man" <> show n </> "index" <.> "json")
-            $ encode
-            $ Manifest.filterSection n m
+    for_ [1 .. 8] $ \n -> do
+        let json = "man" <> show n </> "index" <.> "json"
+        createDirectoryIfMissing True $ takeDirectory json
+        writeFileLBS json $ encode $ Manifest.filterSection n m
 
-    writeFileLBS ("index" <.> "json") $ encode m
-
-    pure m
+    m <$ writeFileLBS ("index" <.> "json") (encode m)
 
 css :: ByteString
 css = $(embedFile "bluebook.css")
