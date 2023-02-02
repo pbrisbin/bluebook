@@ -49,6 +49,11 @@ The following options represent **bluebook**'s default behavior:
 
 ## ENVIRONMENT
 
+**HTML_ROOT**
+
+> Prefix for all internal links. Default is `/`. The value must end in a slash
+> and one will be appended automatically if necessary.
+
 **MANPATH**
 
 > `:`-separated list of directories to search for man-pages. Default is,
