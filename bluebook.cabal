@@ -29,7 +29,6 @@ library
       Bluebook.Html
       Bluebook.Manifest
       Bluebook.ManPage
-      Bluebook.ManPath
       Bluebook.Prelude
       Bluebook.Settings
       Bluebook.Shake
