@@ -82,6 +82,7 @@ executables:
     dependencies:
       - bluebook
       - file-embed
+      - unliftio
     ghc-options:
       - -threaded
       - -rtsopts

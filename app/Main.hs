@@ -15,6 +15,7 @@ import qualified Bluebook.ManPage as ManPage
 import Bluebook.ManPath
 import Bluebook.Shake
 import Data.FileEmbed
+import qualified UnliftIO.Directory as UnliftIO
 
 main :: IO ()
 main = runShake $ do
@@ -60,13 +61,14 @@ loadManifestIO :: FilePath -> IO Manifest
 loadManifestIO = loadManifestVia getDirectoryFilesIO ""
 
 loadManifestVia
-    :: Monad m
+    :: MonadIO m
     => (FilePath -> [FilePath] -> m [FilePath])
     -> FilePath
     -> FilePath
     -> m Manifest
 loadManifestVia getFiles subdir path = do
-    contents <- getFiles path [subdir <> "//*"]
+    exists <- UnliftIO.doesDirectoryExist path
+    contents <- if exists then getFiles path [subdir <> "//*"] else pure []
     pure $ addBluebook $ Manifest.fromList $ mapMaybe (newManPage path) contents
   where
     addBluebook
