@@ -72,12 +72,11 @@ renderHtml root title body = toStrict $ Blaze.renderHtml $ docTypeHtml $ do
 
         Html.footer $ do
             "Built with "
-            Html.strong
-                $ Html.a
-                ! Html.href (toValue $ ManPage.url ManPage.bluebook)
-                $ toHtml
-                $ ManPage.ref ManPage.bluebook
+            Html.strong $ Html.a ! Html.href (toValue docsUrl) $ "bluebook(1)"
             " — © 2023 Patrick Brisbin"
+
+docsUrl :: Text
+docsUrl = "https://pbrisbin.github.io/bluebook/man1/bluebook.1.html"
 
 notFoundHtml :: Html
 notFoundHtml = Html.p "Page not found"
