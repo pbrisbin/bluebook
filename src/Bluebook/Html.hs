@@ -12,6 +12,8 @@ import Bluebook.Error
 import Bluebook.ManPage (ManPage)
 import qualified Bluebook.ManPage as ManPage
 import qualified Data.Text as T
+import Data.Version (showVersion)
+import Paths_bluebook as Pkg
 import Text.Blaze.Html (Html)
 import qualified Text.Blaze.Html.Renderer.Utf8 as Blaze
 import qualified Text.Blaze.Html5 as Html
@@ -73,6 +75,7 @@ renderHtml root title body = toStrict $ Blaze.renderHtml $ docTypeHtml $ do
         Html.footer $ do
             "Built with "
             Html.strong $ Html.a ! Html.href (toValue docsUrl) $ "bluebook(1)"
+            toHtml $ " v" <> showVersion Pkg.version
             " — © 2023 Patrick Brisbin"
 
 docsUrl :: Text
