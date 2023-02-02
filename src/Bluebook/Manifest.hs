@@ -5,7 +5,6 @@ module Bluebook.Manifest
     , lookup
     , lookupThrow
     , lookupRef
-    , addBluebook
     ) where
 
 import Bluebook.Prelude hiding (fromList, toList)
@@ -44,6 +43,3 @@ lookupThrow path = maybe (throwIO $ FileNotFound path) pure . lookup path
 
 lookupRef :: Text -> Manifest -> Maybe ManPage
 lookupRef ref = Map.lookup ref . refs
-
-addBluebook :: Manifest -> Manifest
-addBluebook = (<> fromList [ManPage.bluebook])

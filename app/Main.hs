@@ -72,13 +72,7 @@ loadManifestVia
 loadManifestVia getFiles root subdir path = do
     exists <- UnliftIO.doesDirectoryExist path
     contents <- if exists then getFiles path [subdir <> "//*"] else pure []
-    pure $ addBluebook $ Manifest.fromList $ mapMaybe
-        (newManPage root path)
-        contents
-  where
-    addBluebook
-        | subdir `elem` ["", "man1"] = Manifest.addBluebook
-        | otherwise = id
+    pure $ Manifest.fromList $ mapMaybe (newManPage root path) contents
 
 css :: ByteString
 css = $(embedFile "bluebook.css")

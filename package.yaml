@@ -61,7 +61,6 @@ library:
     - envparse
     - errors
     - extra
-    - file-embed
     - filepath
     - microlens-platform
     - mtl
