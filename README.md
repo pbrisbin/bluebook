@@ -1,3 +1,7 @@
+% BLUEBOOK(1) User Manual
+%
+% January 2023
+
 ## NAME
 
 bluebook - nicely render man-pages to html, with cross-linking
@@ -15,8 +19,7 @@ references to other man-pages it knows about.
 ## OPTIONS
 
 Bluebook comprises a small set of _Shake_ rules for producing its artifacts. As
-such, the **bluebook** executable's option parser is provided by Shake. For more
-details on Shake, see https://shakebuild.com/manual.
+such, the **bluebook** executable's option parser is provided by Shake.
 
 To see all available options, run **bluebook --help**. The following lists
 commonly-needed and/or overridden options only.
@@ -129,3 +132,9 @@ Use Bluebook in a GitHub Action to build a static site of man-pages for deploy:
 - name: Deploy
   run: ...
 ```
+
+# SEE ALSO
+
+- https://shakebuild.com/manual
+- https://pandoc.org/MANUAL.html
+- https://hub.docker.com/_/nginx
