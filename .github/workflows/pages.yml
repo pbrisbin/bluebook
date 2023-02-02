@@ -32,7 +32,13 @@ jobs:
         with:
           stack-arguments: --copy-bins
 
-      - run: |
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - name: Create bluebook(1)
+        run: make doc.install PANDOC=pandoc
+
+      - name: Generate site
+        run: |
           mkdir -p _site
           ${{ steps.stack.outputs.local-bin }}/bluebook -C _site
         env:
