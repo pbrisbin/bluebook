@@ -12,64 +12,69 @@ import Bluebook.Manifest (Manifest)
 import qualified Bluebook.Manifest as Manifest
 import Bluebook.ManPage (newManPage)
 import qualified Bluebook.ManPage as ManPage
-import Bluebook.ManPath
+import Bluebook.Settings
 import Bluebook.Shake
 import Data.FileEmbed
 import qualified UnliftIO.Directory as UnliftIO
 
 main :: IO ()
-main = runShake $ do
-    manPath <- getEnvManPath
-    manifest <- liftIO $ foldMapM loadManifestIO manPath
+main = do
+    Settings {..} <- loadSettings
 
-    want $ concat
-        [ map (\n -> "man" <> show @_ @Int n <> "/index.html") [1 .. 8]
-        , map ManPage.outputPath $ Manifest.toList manifest
-        , ["index.html", "404.html", "css/main.css"]
-        ]
+    runShake $ do
+        manifest <- liftIO $ foldMapM (loadManifestIO root) manPath
 
-    "man*/*.*.html" %> \out -> do
-        page <- Manifest.lookupThrow out manifest
-        content <- ManPage.read readFileBS page
-        html <- manPage2Html manifest content `actionCatch` \e -> do
-            putWarn $ displayException e
-            pure $ errorHtml e
-        writeFileBS out $ renderHtmlManPage page html
+        want $ concat
+            [ map (\n -> "man" <> show @_ @Int n <> "/index.html") [1 .. 8]
+            , map ManPage.outputPath $ Manifest.toList manifest
+            , ["index.html", "404.html", "css/main.css"]
+            ]
 
-    "man*/index.html" %> \out -> do
-        let section = takeDirectory out
-            title = pack $ section <> " man-pages"
-        m <- foldMapM (loadManifest section) manPath
-        writeFileBS out $ renderHtmlIndex title $ Manifest.toList m
+        "man*/*.*.html" %> \out -> do
+            page <- Manifest.lookupThrow out manifest
+            content <- ManPage.read readFileBS page
+            html <- manPage2Html manifest content `actionCatch` \e -> do
+                putWarn $ displayException e
+                pure $ errorHtml e
+            writeFileBS out $ renderHtmlManPage root page html
 
-    "index.html" %> \out -> do
-        let title = "All man-pages"
-        m <- foldMapM (loadManifest "") manPath
-        writeFileBS out $ renderHtmlIndex title $ Manifest.toList m
+        "man*/index.html" %> \out -> do
+            let section = takeDirectory out
+                title = pack $ section <> " man-pages"
+            m <- foldMapM (loadManifest root section) manPath
+            writeFileBS out $ renderHtmlIndex root title $ Manifest.toList m
 
-    "404.html" %> \out -> do
-        writeFileBS out $ renderHtml "Not Found" notFoundHtml
+        "index.html" %> \out -> do
+            let title = "All man-pages"
+            m <- foldMapM (loadManifest root "") manPath
+            writeFileBS out $ renderHtmlIndex root title $ Manifest.toList m
 
-    "css/main.css" %> (`writeFileBS` css)
+        "404.html" %> \out -> do
+            writeFileBS out $ renderHtml root "Not Found" notFoundHtml
 
-    phony "clean" $ liftIO $ removeFiles "." ["//*.html", "//*.css"]
+        "css/main.css" %> (`writeFileBS` css)
 
-loadManifest :: FilePath -> FilePath -> Action Manifest
+        phony "clean" $ liftIO $ removeFiles "." ["//*.html", "//*.css"]
+
+loadManifest :: Text -> FilePath -> FilePath -> Action Manifest
 loadManifest = loadManifestVia getDirectoryFiles
 
-loadManifestIO :: FilePath -> IO Manifest
-loadManifestIO = loadManifestVia getDirectoryFilesIO ""
+loadManifestIO :: Text -> FilePath -> IO Manifest
+loadManifestIO root = loadManifestVia getDirectoryFilesIO root ""
 
 loadManifestVia
     :: MonadIO m
     => (FilePath -> [FilePath] -> m [FilePath])
+    -> Text
     -> FilePath
     -> FilePath
     -> m Manifest
-loadManifestVia getFiles subdir path = do
+loadManifestVia getFiles root subdir path = do
     exists <- UnliftIO.doesDirectoryExist path
     contents <- if exists then getFiles path [subdir <> "//*"] else pure []
-    pure $ addBluebook $ Manifest.fromList $ mapMaybe (newManPage path) contents
+    pure $ addBluebook $ Manifest.fromList $ mapMaybe
+        (newManPage root path)
+        contents
   where
     addBluebook
         | subdir `elem` ["", "man1"] = Manifest.addBluebook

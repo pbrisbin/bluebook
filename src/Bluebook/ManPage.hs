@@ -28,8 +28,8 @@ data ManPage = ManPage
     }
     deriving stock (Show, Eq, Generic)
 
-newManPage :: FilePath -> FilePath -> Maybe ManPage
-newManPage parent path = do
+newManPage :: Text -> FilePath -> FilePath -> Maybe ManPage
+newManPage root parent path = do
     -- "manN/foo.N[.gz]" => ["manN", "foo.N"]
     [dir, fname] <- pure $ splitDirectories $ dropSuffix ".gz" path
 
@@ -44,7 +44,7 @@ newManPage parent path = do
         , outputPath = dir </> fname <> ".html"
         , section
         , name
-        , url = pack $ "/" <> dir <> "/" <> fname <> ".html"
+        , url = root <> pack (dir <> "/" <> fname <> ".html")
         , ref = name <> "(" <> show section <> ")"
         }
 

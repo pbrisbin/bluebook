@@ -19,8 +19,8 @@ import Text.Blaze.Html5 (docTypeHtml, toHtml, toValue, (!))
 import qualified Text.Blaze.Html5.Attributes as Html
     (charset, class_, href, rel)
 
-renderHtmlIndex :: Text -> [ManPage] -> ByteString
-renderHtmlIndex title pages = renderHtml title $ do
+renderHtmlIndex :: Text -> Text -> [ManPage] -> ByteString
+renderHtmlIndex root title pages = renderHtml root title $ do
     Html.header $ do
         Html.h1 $ toHtml title
     Html.section $ Html.ul $ for_ (sortOn ManPage.ref pages) $ \page ->
@@ -30,8 +30,8 @@ renderHtmlIndex title pages = renderHtml title $ do
             $ toHtml
             $ ManPage.ref page
 
-renderHtmlManPage :: ManPage -> Html -> ByteString
-renderHtmlManPage page html = renderHtml title $ do
+renderHtmlManPage :: Text -> ManPage -> Html -> ByteString
+renderHtmlManPage root page html = renderHtml root title $ do
     Html.section ! Html.class_ "man-page" $ do
         Html.header $ Html.h1 $ Html.toHtml title
         html
@@ -53,18 +53,19 @@ renderHtmlManPage page html = renderHtml title $ do
         8 -> "System Management Commands"
         _ -> "N/A"
 
-renderHtml :: Text -> Html -> ByteString
-renderHtml title body = toStrict $ Blaze.renderHtml $ docTypeHtml $ do
+renderHtml :: Text -> Text -> Html -> ByteString
+renderHtml root title body = toStrict $ Blaze.renderHtml $ docTypeHtml $ do
     Html.head $ do
         Html.meta ! Html.charset "UTF-8"
-        Html.link ! Html.rel "stylesheet" ! Html.href "/css/main.css"
+        Html.link ! Html.rel "stylesheet" ! Html.href
+            (toValue root <> "css/main.css")
         Html.title $ toHtml $ "Bluebook - " <> title
     Html.body $ do
         Html.nav $ Html.ul $ do
-            Html.li $ Html.a ! Html.href "/" $ "Home"
+            Html.li $ Html.a ! Html.href (toValue root) $ "Home"
             for_ [1 .. 8] $ \section -> do
                 let name = "man" <> show @Text @Int section
-                    link = toValue $ "/man" <> show @Text section <> "/"
+                    link = toValue $ root <> "man" <> show @Text section <> "/"
                 Html.li $ Html.a ! Html.href link $ toHtml name
 
         body

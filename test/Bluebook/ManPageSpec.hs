@@ -11,7 +11,7 @@ spec :: Spec
 spec = do
     describe "newManPage" $ do
         it "accepts typical man-pages" $ do
-            newManPage "/usr/share/man" "man1/foo.1" `shouldBe` Just ManPage
+            newManPage "/" "/usr/share/man" "man1/foo.1" `shouldBe` Just ManPage
                 { sourcePath = "/usr/share/man/man1/foo.1"
                 , outputPath = "man1/foo.1.html"
                 , section = 1
@@ -20,7 +20,7 @@ spec = do
                 , ref = "foo(1)"
                 }
 
-            newManPage "/usr/share/man" "man7/bar.7" `shouldBe` Just ManPage
+            newManPage "/" "/usr/share/man" "man7/bar.7" `shouldBe` Just ManPage
                 { sourcePath = "/usr/share/man/man7/bar.7"
                 , outputPath = "man7/bar.7.html"
                 , section = 7
@@ -31,7 +31,7 @@ spec = do
 
         context "sourcePath" $ do
             it "captures gz extensions" $ do
-                newManPage "/usr/share/man" "man1/foo.1.gz" `shouldBe` Just
+                newManPage "/" "/usr/share/man" "man1/foo.1.gz" `shouldBe` Just
                     ManPage
                         { sourcePath = "/usr/share/man/man1/foo.1.gz"
                         , outputPath = "man1/foo.1.html"
@@ -42,7 +42,7 @@ spec = do
                         }
 
             it "captures the parent" $ do
-                newManPage "/usr/local/share/man" "man1/foo.1.gz"
+                newManPage "/" "/usr/local/share/man" "man1/foo.1.gz"
                     `shouldBe` Just ManPage
                                    { sourcePath =
                                        "/usr/local/share/man/man1/foo.1.gz"
@@ -50,5 +50,18 @@ spec = do
                                    , section = 1
                                    , name = "foo"
                                    , url = "/man1/foo.1.html"
+                                   , ref = "foo(1)"
+                                   }
+
+
+        context "url" $ do
+            it "respects root" $ do
+                newManPage "/sub/" "/usr/share/man" "man1/foo.1.gz"
+                    `shouldBe` Just ManPage
+                                   { sourcePath = "/usr/share/man/man1/foo.1.gz"
+                                   , outputPath = "man1/foo.1.html"
+                                   , section = 1
+                                   , name = "foo"
+                                   , url = "/sub/man1/foo.1.html"
                                    , ref = "foo(1)"
                                    }

@@ -25,14 +25,19 @@ jobs:
         with:
           path: _site
           key: ${{ runner.os }}-pages
+
       - uses: freckle/stack-cache-action@v2
       - id: stack
         uses: freckle/stack-action@v3
         with:
           stack-arguments: --copy-bins
+
       - run: |
           mkdir -p _site
           ${{ steps.stack.outputs.local-bin }}/bluebook -C _site
+        env:
+          HTML_ROOT: /bluebook/
+
       - uses: actions/configure-pages@v3
       - uses: actions/upload-pages-artifact@v1
         with:
