@@ -5,7 +5,7 @@ cabal-version: 1.18
 -- see: https://github.com/sol/hpack
 
 name:           bluebook
-version:        1.1.0.0
+version:        1.1.0.1
 description:    Please see <https://github.com/pbrisbin/bluebook#readme>
 homepage:       https://github.com/pbrisbin/bluebook#readme
 bug-reports:    https://github.com/pbrisbin/bluebook/issues
