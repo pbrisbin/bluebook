@@ -30,7 +30,9 @@ jobs:
         uses: freckle/stack-action@v3
         with:
           stack-arguments: --copy-bins
-      - run: ${{ steps.stack.outputs.local-bin }}/bluebook -C _site
+      - run: |
+          mkdir -p _site
+          ${{ steps.stack.outputs.local-bin }}/bluebook -C _site
       - uses: actions/configure-pages@v3
       - uses: actions/upload-pages-artifact@v1
         with:
