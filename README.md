@@ -23,8 +23,8 @@ commonly-needed and/or overridden options only.
 
 **\-C**, **\--directory**=_DIRECTORY_
 
-> Produce our artifacts into _DIRECTORY_. By default artifacts are produced into
-> the current directory.
+> Change into _DIRECTORY_ before producing artifacts. _DIRECTORY_ must exist
+> already.
 
 The following options represent **bluebook**'s default behavior:
 
