@@ -11,8 +11,10 @@ module Bluebook.Shake
 import Bluebook.Prelude hiding (readFileBS, writeFileBS)
 import qualified Bluebook.Prelude as Prelude
 
+import Data.Version (showVersion)
 import Development.Shake
 import Development.Shake.FilePath
+import qualified Paths_bluebook as Pkg
 import UnliftIO.Directory (createDirectoryIfMissing)
 
 runShake :: Rules () -> IO ()
@@ -21,6 +23,7 @@ runShake = shakeArgs defaultShakeOptions
 defaultShakeOptions :: ShakeOptions
 defaultShakeOptions = shakeOptions
     { shakeThreads = 0
+    , shakeVersion = showVersion Pkg.version
     , shakeVerbosity = Verbose
     , shakeChange = ChangeModtimeAndDigestInput
     , shakeColor = True
