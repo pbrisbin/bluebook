@@ -61,6 +61,7 @@ library:
     - envparse
     - errors
     - extra
+    - file-embed
     - filepath
     - microlens-platform
     - mtl
@@ -80,8 +81,19 @@ executables:
     source-dirs: app
     dependencies:
       - bluebook
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+
+  man2html:
+    main: Main.hs
+    source-dirs: man2html
+    dependencies:
+      - blaze-html
+      - bluebook
       - file-embed
-      - unliftio
+      - text
     ghc-options:
       - -threaded
       - -rtsopts

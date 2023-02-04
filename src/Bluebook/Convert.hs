@@ -1,5 +1,8 @@
 module Bluebook.Convert
-    ( manPage2Html
+    ( PageDetails(..)
+    , pageDetails
+    , pageDetailsFromPath
+    , man2Html
 
     -- * Exported for testing
     , addHeaderLinks
@@ -16,21 +19,88 @@ import qualified Bluebook.Manifest as Manifest
 import Bluebook.ManPage (ManPage)
 import qualified Bluebook.ManPage as ManPage
 import qualified Data.Text as T
-import Text.Blaze.Html (Html)
-import Text.Pandoc.Definition as Pandoc
-import Text.Pandoc.Options as Pandoc
-import Text.Pandoc.Readers.Man as Pandoc
-import Text.Pandoc.Walk as Pandoc
-import Text.Pandoc.Writers.HTML as Pandoc
+import System.FilePath (splitExtension, takeBaseName)
+import Text.Blaze.Html (Html, toHtml, (!))
+import qualified Text.Blaze.Html5 as Html
+import qualified Text.Blaze.Html5.Attributes as Html (class_)
+import Text.Pandoc.Definition
+import Text.Pandoc.Options
+import Text.Pandoc.Readers.Man
+import Text.Pandoc.Walk
+import Text.Pandoc.Writers.HTML
 
-manPage2Html :: MonadIO m => Manifest -> Text -> m Html
-manPage2Html m body = runPandoc $ do
-    doc <- Pandoc.readMan Pandoc.def body
-    Pandoc.writeHtml5 Pandoc.def
-        $ Pandoc.walk addHeaderLinks
-        $ Pandoc.walk reduceHeaderLevels
-        $ Pandoc.walk (convertManPageRefs m)
-        $ Pandoc.walk linkBareUrls doc
+data PageDetails = PageDetails
+    { name :: Text
+    , date :: Text
+    , section :: Int
+    , sectionName :: Text
+    , title :: Text
+    }
+
+pageDetails :: Int -> Text -> Text -> PageDetails
+pageDetails section name date = PageDetails { .. }
+  where
+    sectionName = case section of
+        1 -> "User Commands"
+        2 -> "System Calls"
+        3 -> "Library Calls"
+        4 -> "Devices"
+        5 -> "Files"
+        6 -> "Games"
+        7 -> "Overviews, Conventions, and Miscellaneous"
+        8 -> "System Management Commands"
+        _ -> "User Commands"
+    title = name <> "(" <> show section <> ")"
+
+-- | Infer details from @manN/foo.N.html@, used for errors
+pageDetailsFromPath :: FilePath -> PageDetails
+pageDetailsFromPath path = pageDetails section (T.toUpper $ pack name) "-"
+  where
+    (name, n) = splitExtension $ takeBaseName path
+    section = fromMaybe 1 $ readMaybe n
+
+man2Html :: MonadIO m => Maybe Manifest -> Text -> m (Html, PageDetails)
+man2Html mManifest body = runPandoc $ do
+    doc <- readMan def body
+    content <-
+        writeHtml5 def
+        $ convertRefs
+        $ walk addHeaderLinks
+        $ walk reduceHeaderLevels
+        $ walk linkBareUrls doc
+
+    let details = lookupDetails doc
+        html = Html.section ! Html.class_ "man-page" $ do
+            Html.header $ Html.ul $ do
+                Html.li $ Html.toHtml $ title details
+                Html.li $ Html.toHtml $ title details
+
+            content
+
+            Html.footer $ Html.ul $ do
+                Html.li $ toHtml $ sectionName details
+                Html.li $ toHtml $ date details
+                Html.li $ toHtml $ title details
+
+    pure (html, details)
+  where
+    convertRefs = case mManifest of
+        Nothing -> id
+        Just m -> walk (convertManPageRefs m)
+
+lookupDetails :: Pandoc -> PageDetails
+lookupDetails (Pandoc meta _) = pageDetails
+    (fromMaybe 1 $ readMaybe . unpack . metaText =<< lookupMeta "section" meta)
+    (inlineTexts $ docTitle meta)
+    (inlineTexts $ docDate meta)
+
+metaText :: MetaValue -> Text
+metaText = \case
+    MetaInlines is -> inlineTexts is
+    _ -> ""
+
+inlineTexts :: [Inline] -> Text
+inlineTexts = mconcat . concatMap inlineText
 
 addHeaderLinks :: Block -> Block
 addHeaderLinks = linkIdentifiers . addIdentifiers
@@ -67,6 +137,7 @@ toIdentifier =
 
 inlineText :: Inline -> [Text]
 inlineText = \case
+    Space -> [" "]
     Str t -> [t]
     Code _ t -> [t]
     _ -> []

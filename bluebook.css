@@ -81,19 +81,27 @@ body > footer {
   text-align: center;
 }
 
+.man-page header ul,
 .man-page footer ul {
   display: flex;
   font-family: monospace;
+  font-size: large;
   list-style: none;
   margin-bottom: 2em;
   margin-top: 2em;
   padding: 0;
 }
 
+.man-page header li,
 .man-page footer li {
   width: 100%
 }
 
 .man-page footer li:nth-child(2) {
+  text-align: center;
+}
+
+.man-page header li:nth-child(2),
+.man-page footer li:nth-child(3) {
   text-align: right;
 }
