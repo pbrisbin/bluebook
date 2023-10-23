@@ -6,6 +6,10 @@
 
 bluebook - nicely render man-pages to html, with cross-linking
 
+## STATUS - ARCHIVED
+
+We recommend using https://github.com/apjanke/ronn-ng.
+
 ## SYNOPSIS
 
 **bluebook** [*option*]... [*target*]...
